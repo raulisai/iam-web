@@ -1,7 +1,7 @@
 <script>
     import Brain from './Brain.svelte';
-    import TaskCarousel from './TaskCarousel.svelte';
-    import MetricsChart from './MetricsChart.svelte';
+    import TaskCarousel from '../../lib/components/TaskCarousel.svelte';
+    import MetricsChart from '../../lib/components/MetricsChart.svelte';
 
     let fillLevel = 50;
 

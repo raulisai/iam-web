@@ -1,6 +1,6 @@
 <script>
     // Importamos la imagen del cerebro
-    let image = "/human-brain.png";
+    let image = "img/human-brain-dark.png";
     
     // Parámetro para controlar el nivel de llenado (0 a 100)
     export let fillLevel = 50;

@@ -3,7 +3,8 @@
     import TaskCarousel from '../../lib/components/TaskCarousel.svelte';
     import MetricsChart from '../../lib/components/MetricsChart.svelte';
 
-    let fillLevel = 50;
+    let fillLevel = 1
+    0;
 
     // Datos de ejemplo mínimos para la gráfica (se pueden reemplazar por reales)
     const chartData = [0.25,0.5,0.35,0.6,0.45,0.7,0.5].map((y,i,arr)=>({ x: i/(arr.length-1), y }));

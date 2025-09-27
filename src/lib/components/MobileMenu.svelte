@@ -3,10 +3,11 @@
 
     const items: { key: string, label: string, icon: string }[] = [
         { key: '/', label: 'Home', icon: '🏠' },
-        { key: '/minde', label: 'Minder', icon: '⭐' },
-        { key: '/body', label: 'Body', icon: '📈' },
+        { key: '/minde', label: 'Mind', icon: '🧠' },
+        { key: '/body', label: 'Body', icon: '💪' },
         { key: '/goals', label: 'Goals', icon: '🎯' },
-        { key: '/failures', label: 'Failures', icon: '💣' }
+        { key: '/failures', label: 'Failures', icon: '💔' },
+        { key: '/assistant', label: 'AI', icon: '🤖' }
     ];
 
     function isActive(key: string) {

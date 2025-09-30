@@ -3,6 +3,7 @@
     import StatsCard from '../../lib/components/StatsCard.svelte';
     import HealthBar from '../../lib/components/HealthBar.svelte';
     import ProgressRing from '../../lib/components/ProgressRing.svelte';
+    import Body from './Body.svelte';
 
     // Datos de ejemplo para tareas físicas
     const bodyTasks = [
@@ -14,7 +15,7 @@
     ];
 
     // Stats de ejemplo
-    let energy = 75;
+    let energy = 35;
     let stamina = 60;
     let strength = 45;
     let flexibility = 80;
@@ -40,24 +41,9 @@
         <!-- 2) Imagen del cuerpo y stats principales -->
         <div class="flex-1 px-4 py-2 flex flex-col gap-4 overflow-y-auto">
             <!-- Contenedor de imagen y barras de salud -->
-            <div class="relative">
-                <div class="flex justify-center">
-                    <div class="relative w-48 h-48">
-                        <img src="/img/body-status-dark.png" alt="Body Status" class="w-full h-full object-contain" />
-                        <!-- Indicadores sobre la imagen -->
-                        <div class="absolute top-2 left-2">
-                            <div class="bg-neutral-900/80 backdrop-blur rounded-lg px-2 py-1">
-                                <div class="text-[10px] text-emerald-400 font-bold">Energy</div>
-                                <div class="text-lg font-bold text-white">{energy}%</div>
-                            </div>
-                        </div>
-                        <div class="absolute bottom-2 right-2">
-                            <div class="bg-neutral-900/80 backdrop-blur rounded-lg px-2 py-1">
-                                <div class="text-[10px] text-blue-400 font-bold">Stamina</div>
-                                <div class="text-lg font-bold text-white">{stamina}%</div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="relative align-center justify-center">
+                <div class="">
+                   <Body energy={energy} stamina={stamina} fillLevel={energy} />
                 </div>
 
                 <!-- Health bars alrededor -->

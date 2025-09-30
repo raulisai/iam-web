@@ -49,7 +49,7 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="text-[11px] font-semibold text-white/90 truncate">{`Mission ${i + 1}`}</div>
                                     </div>
-                                    <div class="text-[10px] mt-6 text-emerald-300/90 font-semibold">+30</div>
+                                    <div class="text-[10px]  text-emerald-300/90 font-semibold">+30</div>
                                 </div>
                                 <div class="mt-1 text-[10px] text-neutral-300/80 flex items-center gap-2">
                                     <span>Time: 30m</span>
@@ -84,7 +84,7 @@
                                 <div class="absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-yellow-400/10 blur-xl"></div>
                             </div>
                             <div class="relative h-full p-2 flex flex-col">
-                                <button aria-label="Done" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/30 active:bg-emerald-500/40" on:click|stopPropagation={() => onDone(t.id)}>
+                                <button aria-label="Done" class="absolute top-16 right-2 w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/30 active:bg-emerald-500/40" on:click|stopPropagation={() => onDone(t.id)}>
                                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                                 </button>
                                 <div class="flex items-center gap-2">

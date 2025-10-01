@@ -84,7 +84,7 @@
 					>
 						<!-- Avatar -->
 						<div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-							{user.name}
+							{user.name}D
 						</div>
 						<span class="hidden sm:block text-sm text-neutral-200">
 							{user.name}
@@ -98,7 +98,7 @@
 					{#if showUserMenu}
 						<div class="absolute right-0 mt-2 w-48 bg-neutral-900 rounded-lg shadow-xl border border-neutral-800 py-2 z-50">
 							<div class="px-4 py-2 border-b border-neutral-800">
-								<p class="text-sm font-medium text-white">{user.name}</p>
+								<p class="text-sm font-medium text-white">{user.name}DAVO</p>
 								<p class="text-xs text-neutral-400">{user.email}</p>
 							</div>
 							

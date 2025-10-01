@@ -26,7 +26,7 @@
         </div>
 
         <!-- 3) Gráfica de métricas -->
-        <div class="shrink-0 px-4 pb-2">
+        <div class="shrink-0 mb-16 px-4 pb-2">
             <MetricsChart data={chartData} />
         </div>
     </div>

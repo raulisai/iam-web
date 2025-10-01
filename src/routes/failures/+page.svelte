@@ -2,6 +2,7 @@
     import FailureCard from '../../lib/components/FailureCard.svelte';
     import type { Failure } from '../../lib/components/FailureCard.svelte';
     import StatsCard from '../../lib/components/StatsCard.svelte';
+    import AddFailureForm from './AddFailureForm.svelte';
     
     const failures: Failure[] = [
         {
@@ -76,6 +77,11 @@
         acc[f.category].push(f);
         return acc;
     }, {} as Record<string, Failure[]>);
+
+    function handleFailureSubmit(event: CustomEvent) {
+        console.log('New failure submitted:', event.detail);
+        // TODO: Add to failures array or send to server
+    }
 </script>
 
 <!-- Vista mobile-only -->
@@ -128,9 +134,7 @@
         </div>
 
         <!-- Floating action button -->
-        <button class="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 flex items-center justify-center text-2xl">
-            +
-        </button>
+        <AddFailureForm on:submit={handleFailureSubmit} />
     </div>
 </div>
 

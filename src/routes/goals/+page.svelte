@@ -2,6 +2,7 @@
     import Timeline from '../../lib/components/Timeline.svelte';
     import type { Goal } from '../../lib/components/Timeline.svelte';
     import StatsCard from '../../lib/components/StatsCard.svelte';
+    import AddGoalForm from './AddGoalForm.svelte';
 
     const goals: Goal[] = [
         {
@@ -63,6 +64,11 @@
     const earnedPoints = goals
         .filter(g => g.status === 'completed')
         .reduce((sum, g) => sum + g.points, 0);
+
+    function handleGoalSubmit(event: CustomEvent) {
+        console.log('New goal submitted:', event.detail);
+        // TODO: Add to goals array or send to server
+    }
 </script>
 
 <!-- Vista mobile-only -->
@@ -98,10 +104,8 @@
             <Timeline {goals} />
         </div>
 
-        <!-- Botón flotante para agregar goal -->
-        <button class="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 flex items-center justify-center text-2xl">
-            +
-        </button>
+        <!-- Add Goal Form -->
+        <AddGoalForm on:submit={handleGoalSubmit} />
     </div>
 </div>
 

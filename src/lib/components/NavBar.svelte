@@ -41,7 +41,7 @@
 	});
 </script>
 
-<nav class="bg-neutral-900/50 backdrop-blur-lg border-b border-neutral-800">
+<nav class="bg-neutral-900/50 backdrop-blur-lg border-b border-neutral-800 relative z-50">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex justify-between items-center h-16">
 			<!-- Logo y nombre -->
@@ -77,14 +77,14 @@
 			
 			<!-- Menú de usuario -->
 			{#if user}
-				<div class="relative user-menu-container">
+				<div class="relative user-menu-container z-[100]">
 					<button
 						onclick={toggleUserMenu}
 						class="flex items-center space-x-3 bg-neutral-800/50 hover:bg-neutral-700/50 rounded-full p-2 pr-4 transition-colors"
 					>
 						<!-- Avatar -->
 						<div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-							{user.name}D
+							{user.name.charAt(0).toUpperCase()}
 						</div>
 						<span class="hidden sm:block text-sm text-neutral-200">
 							{user.name}
@@ -96,12 +96,15 @@
 					
 					<!-- Dropdown menu -->
 					{#if showUserMenu}
-						<div class="absolute right-0 mt-2 w-48 bg-neutral-900 rounded-lg shadow-xl border border-neutral-800 py-2 z-50">
-							<div class="px-4 py-2 border-b border-neutral-800">
-								<p class="text-sm font-medium text-white">{user.name}DAVO</p>
-								<p class="text-xs text-neutral-400">{user.email}</p>
-							</div>
-							
+						<div class="fixed right-4 top-16 w-48 bg-neutral-900 rounded-lg shadow-xl border border-neutral-800 py-2 z-[9999]">
+							{#if user}
+								<div class="flex flex-col">
+									<div class="px-4 py-2 border-b border-neutral-800">
+										<p class="text-sm font-medium text-white">{user.name}</p>
+										<p class="text-xs text-neutral-400">{user.email}</p>
+									</div>
+								</div>
+							{/if}
 							<a href="/profile" class="block px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors">
 								<div class="flex items-center space-x-2">
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -14,7 +14,7 @@
     <!-- Layout vertical sin scroll -->
     <div class="flex flex-col h-full">
         <!-- 1) Carrusel de tareas -->
-        <div class="shrink-0">
+        <div class="shrink-0 z-0">
             <TaskCarousel title="Missions" />
         </div>
 

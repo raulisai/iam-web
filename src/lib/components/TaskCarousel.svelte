@@ -19,7 +19,7 @@
     const onDone = (id: string) => dispatch('done', { id });
 </script>
 
-<section class="w-full h-48 md:hidden">
+<section class="w-full h-48">
     <div class="px-4 pt-2">
         <h2 class="text-white/90 font-semibold tracking-wide">{title}</h2>
     </div>

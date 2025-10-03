@@ -109,7 +109,51 @@
     </div>
 </div>
 
-<!-- Placeholder escritorio -->
-<div class="hidden md:flex items-center justify-center h-screen bg-neutral-950 text-neutral-400">
-    <p>Goals Timeline - Optimizado para móvil</p>
+<!-- Vista escritorio -->
+<div class="hidden md:flex h-screen bg-neutral-950">
+    <div class="flex-1 overflow-y-auto">
+        <div class="max-w-6xl mx-auto p-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-4xl font-bold text-white">Goals Timeline</h1>
+                <p class="text-sm text-white/60 mt-2">Track your short, medium and long term goals</p>
+            </div>
+
+            <!-- Stats cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <StatsCard 
+                    title="Active Goals" 
+                    value={totalGoals} 
+                    icon="🎯" 
+                    color="blue"
+                />
+                <StatsCard 
+                    title="Completed" 
+                    value={completedGoals} 
+                    icon="✅" 
+                    color="emerald"
+                />
+                <StatsCard 
+                    title="Points Available" 
+                    value={totalPoints} 
+                    icon="⭐" 
+                    color="amber"
+                />
+                <StatsCard 
+                    title="Earned Points" 
+                    value={earnedPoints} 
+                    icon="💎" 
+                    color="blue"
+                />
+            </div>
+
+            <!-- Timeline -->
+            <div class="mb-8">
+                <Timeline {goals} />
+            </div>
+
+            <!-- Add Goal Form -->
+            <AddGoalForm on:submit={handleGoalSubmit} />
+        </div>
+    </div>
 </div>

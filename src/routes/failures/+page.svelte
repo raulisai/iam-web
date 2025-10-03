@@ -138,7 +138,60 @@
     </div>
 </div>
 
-<!-- Placeholder escritorio -->
-<div class="hidden md:flex items-center justify-center h-screen bg-neutral-950 text-neutral-400">
-    <p>Failure Analysis - Optimizado para móvil</p>
+<!-- Vista escritorio -->
+<div class="hidden md:flex h-screen bg-neutral-950">
+    <div class="flex-1 overflow-y-auto">
+        <div class="max-w-6xl mx-auto p-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-4xl font-bold text-white">Failure Analysis</h1>
+                <p class="text-sm text-white/60 mt-2">Learn from mistakes to prevent recurrence</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8">
+                <StatsCard 
+                    title="Total" 
+                    value={totalFailures} 
+                    icon="📊" 
+                    color="blue"
+                />
+                <StatsCard 
+                    title="Resolved" 
+                    value={resolvedFailures} 
+                    icon="✅" 
+                    color="emerald"
+                />
+                <StatsCard 
+                    title="Pending" 
+                    value={totalFailures - resolvedFailures} 
+                    icon="⏳" 
+                    color="amber"
+                />
+                <StatsCard 
+                    title="Critical" 
+                    value={highSeverity} 
+                    icon="⚠️" 
+                    color="red"
+                />
+            </div>
+
+            <!-- Failures list by category -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {#each Object.entries(failuresByCategory) as [category, categoryFailures]}
+                    <div>
+                        <h2 class="text-sm font-semibold text-white/70 uppercase mb-3">{category}</h2>
+                        <div class="space-y-3">
+                            {#each categoryFailures as failure}
+                                <FailureCard {failure} />
+                            {/each}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+
+            <!-- Floating action button -->
+            <AddFailureForm on:submit={handleFailureSubmit} />
+        </div>
+    </div>
 </div>

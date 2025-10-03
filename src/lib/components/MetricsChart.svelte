@@ -17,7 +17,7 @@
     $: d = points.reduce((acc,p,i)=> acc + (i===0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`), '');
 </script>
 
-<section class="w-full h-40 md:hidden">
+<section class="w-full h-40">
     <svg viewBox={`0 0 ${width} ${height}`} class="w-full h-full">
         <defs>
             <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">

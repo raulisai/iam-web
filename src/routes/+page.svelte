@@ -126,7 +126,92 @@
     </div>
 </div>
 
-<!-- Placeholder escritorio -->
-<div class="hidden md:flex items-center justify-center h-screen bg-neutral-950 text-neutral-400">
-    <p>Dashboard Principal - Optimizado para móvil</p>
+<!-- Vista escritorio -->
+<div class="hidden md:flex h-screen bg-neutral-950">
+    <div class="flex-1 overflow-y-auto">
+        <div class="max-w-6xl mx-auto p-8">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-4xl font-bold text-white">Welcome back!</h1>
+                    <p class="text-sm text-white/60 mt-2">Let's make today count</p>
+                </div>
+                <button class="w-12 h-12 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-colors">
+                    <span class="text-xl">⚙️</span>
+                </button>
+            </div>
+
+            <!-- Overall Score y Quick Stats -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Overall Score Ring -->
+                <div class="flex justify-center items-center">
+                    <div class="relative">
+                        <ProgressRing progress={overallScore} size={180} strokeWidth={12} label="Overall Score" sublabel="Great progress!" />
+                        <div class="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-emerald-500 border-2 border-neutral-950 flex items-center justify-center">
+                            <span class="text-sm font-bold text-white">↑</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Grid -->
+                <div class="lg:col-span-2 grid grid-cols-2 gap-4">
+                    <StatsCard 
+                        title="Today's Tasks" 
+                        value={`${completedTasks}/${todayTasks}`} 
+                        subtitle="62% complete"
+                        icon="📋" 
+                        trend="up"
+                        color="blue"
+                    />
+                    <StatsCard 
+                        title="Weekly Points" 
+                        value={weeklyPoints} 
+                        subtitle={`Goal: ${weeklyGoal}`}
+                        icon="⭐" 
+                        trend="up"
+                        color="amber"
+                    />
+                </div>
+            </div>
+
+            <!-- Health Bars Section -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold text-white mb-4">System Health</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <HealthBar value={mindScore} max={100} label="Mind Health" color="blue" />
+                    <HealthBar value={bodyScore} max={100} label="Body Health" color="green" />
+                    <HealthBar value={goalsProgress} max={100} label="Goals Progress" color="yellow" />
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {#each quickActions as action}
+                        <QuickAction {...action} />
+                    {/each}
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold text-white mb-4">Recent Activity</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {#each recentActivity as activity}
+                        <div class="flex items-center justify-between p-4 rounded-lg bg-neutral-900/60 border border-white/5 hover:bg-neutral-900 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <span class="text-2xl">{activity.icon}</span>
+                                <div>
+                                    <div class="text-sm font-medium text-white">{activity.title}</div>
+                                    <div class="text-xs text-white/50">{activity.time}</div>
+                                </div>
+                            </div>
+                            <span class="text-sm font-semibold text-emerald-400">{activity.points}</span>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

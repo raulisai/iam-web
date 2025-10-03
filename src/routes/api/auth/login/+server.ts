@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		const data = await response.json();
 
-		if (response.ok && data.token) {
+		if (response.ok && data.token && data.user) {
 			// Establecer cookie con el token del backend
 			cookies.set('auth-token', data.token, {
 				path: '/',
@@ -35,11 +35,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				maxAge: 60 * 60 * 24 * 7 // 7 días
 			});
 
-			// Crear objeto de usuario para el frontend
+			// Usar los datos del usuario que vienen del backend
 			const user = {
-				id: data.token,
-				email: email,
-				name: email.split('@')[0] // Nombre basado en el email
+				id: data.user.id,
+				email: data.user.email,
+				name: data.user.user // El backend retorna "user" como nombre
 			};
 
 			return json({

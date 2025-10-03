@@ -1,5 +1,4 @@
 import { getContext, setContext } from 'svelte';
-import { BACKEND_URL } from '$lib/config';
 
 interface User {
 	id: string;
@@ -48,7 +47,8 @@ class AuthStore {
 
 	async login(email: string, password: string): Promise<{ success: boolean; message?: string }> {
 		try {
-			const response = await fetch(`${BACKEND_URL}/login`, {
+			// Llamar al endpoint de SvelteKit en lugar del backend directo
+			const response = await fetch('/api/auth/login', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ class AuthStore {
 				this.user = data.user;
 				this.isAuthenticated = true;
 				
-				// Guardar en localStorage
+				// Guardar en localStorage (el token ya está en la cookie httpOnly)
 				localStorage.setItem('user', JSON.stringify(data.user));
 				localStorage.setItem('token', data.token);
 				
@@ -83,8 +83,37 @@ class AuthStore {
 		}
 	}
 
+	// Función helper para hacer peticiones autenticadas con el token JWT
+	async authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
+		const token = this.getToken();
+		
+		if (!token) {
+			throw new Error('No hay token de autenticación');
+		}
 
-	logout() {
+		// Combinar headers existentes con el Authorization header
+		const headers = new Headers(options.headers);
+		headers.set('Authorization', `Bearer ${token}`);
+		headers.set('Content-Type', 'application/json');
+
+		return fetch(url, {
+			...options,
+			headers,
+		});
+	}
+
+
+	async logout() {
+		try {
+			// Llamar al endpoint de logout para limpiar cookies del servidor
+			await fetch('/api/auth/logout', {
+				method: 'POST'
+			});
+		} catch (error) {
+			console.error('Error al cerrar sesión en el servidor:', error);
+		}
+		
+		// Limpiar estado local
 		this.user = null;
 		this.isAuthenticated = false;
 		

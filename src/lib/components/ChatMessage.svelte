@@ -4,7 +4,7 @@
         role: 'user' | 'assistant' | 'system';
         content: string;
         timestamp?: string;
-        status?: 'sending' | 'sent' | 'error';
+        status?: 'sending' | 'sent' | 'error' | 'failed';
         agentName?: string;
     };
 </script>
@@ -40,8 +40,8 @@
                         {/if}
                         {#if message.status === 'sending'}
                             <span class="text-[9px] text-amber-400">Sending...</span>
-                        {:else if message.status === 'error'}
-                            <span class="text-[9px] text-red-400">Error</span>
+                        {:else if message.status === 'error' || message.status === 'failed'}
+                            <span class="text-[9px] text-red-400">Failed</span>
                         {/if}
                     </div>
                 </div>

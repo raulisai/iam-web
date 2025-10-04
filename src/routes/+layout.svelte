@@ -5,6 +5,7 @@
 	import { initializeAuthStore, setAuthContext } from '$lib/stores/auth.svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import NavBar from '$lib/components/NavBar.svelte';
 	
 	let { children, data } = $props();
@@ -24,10 +25,15 @@
 		setAuthContext(authStore);
 	}
 	
-	// Verificar si estamos en una página pública
+	// Verificar si estamos en una página pública y redirigir si no hay sesión
 	$effect(() => {
-		const publicPages = ['/login'];
+		const publicPages = ['/login', '/auth-required'];
 		const isPublicPage = publicPages.includes($page.url.pathname);
+		
+		// Si no está autenticado y no está en una página pública, redirigir
+		if (browser && !authStore.isAuthenticated && !isPublicPage) {
+			goto('/auth-required');
+		}
 	});
 </script>
 

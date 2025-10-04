@@ -37,13 +37,13 @@
             <div class="flex items-center {i % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}">
                 <!-- Card -->
                 <div class="w-5/12">
-                    <div class="rounded-xl border border-white/10 bg-neutral-900/60 p-3 relative">
+                    <a href="/goals/{goal.id}" class="block rounded-xl border border-white/10 bg-neutral-900/60 p-3 relative hover:bg-neutral-900/80 hover:border-white/20 transition-all hover:scale-105 cursor-pointer group">
                         <div class="absolute -top-2 -right-2 text-xl">{statusIcons[goal.status]}</div>
                         <div class="flex items-center gap-2 mb-2">
                             <div class="w-2 h-2 rounded-full {typeColors[goal.type]}"></div>
                             <span class="text-[10px] text-white/50 uppercase">{goal.type} term</span>
                         </div>
-                        <h3 class="text-sm font-semibold text-white mb-1">{goal.title}</h3>
+                        <h3 class="text-sm font-semibold text-white mb-1 group-hover:text-emerald-400 transition-colors">{goal.title}</h3>
                         {#if goal.description}
                             <p class="text-[11px] text-white/60 mb-2">{goal.description}</p>
                         {/if}
@@ -59,7 +59,7 @@
                                 <div class="text-[9px] text-white/40 mt-1">{goal.progress}% completo</div>
                             </div>
                         {/if}
-                    </div>
+                    </a>
                 </div>
                 
                 <!-- Centro con punto -->

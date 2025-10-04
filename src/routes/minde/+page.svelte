@@ -1,12 +1,23 @@
-<script>
+<script lang="ts">
     import Brain from './Brain.svelte';
     import TaskCarousel from '../../lib/components/TaskCarousel.svelte';
     import MetricsChart from '../../lib/components/MetricsChart.svelte';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { getAuthContext } from '$lib/stores/auth.svelte';
+    import { getMindTasks, type Task } from '$lib/services/tasks';
 
     let fillLevel = 50;
+    let tasks = $state<Task[]>([]);
 
     // Datos de ejemplo mínimos para la gráfica (se pueden reemplazar por reales)
     const chartData = [0.25,0.5,0.35,0.6,0.45,0.7,0.5].map((y,i,arr)=>({ x: i/(arr.length-1), y }));
+
+    onMount(async () => {
+        const authStore = getAuthContext();
+        tasks = await getMindTasks(authStore);
+        console.log('Tareas obtenidas:', tasks);
+    });
 </script>
 
 <!-- Vista mobile-only -->
@@ -15,7 +26,7 @@
     <div class="flex flex-col h-full">
         <!-- 1) Carrusel de tareas -->
         <div class="shrink-0 z-0">
-            <TaskCarousel title="Missions" />
+            <TaskCarousel title="Missio" {tasks} />
         </div>
 
         <!-- 2) Cerebro responsivo al centro -->
@@ -82,17 +93,51 @@
                     <div>
                         <h2 class="text-lg font-semibold text-white mb-4">Mind Missions</h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {#each Array(6) as _, i}
-                                <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-2xl">⭐</span>
-                                        <span class="text-xs text-emerald-300 font-semibold">+30</span>
+                            {#if tasks.length === 0}
+                                {#each Array(6) as _, i}
+                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-2xl">⭐</span>
+                                            <span class="text-xs text-emerald-300 font-semibold">+30</span>
+                                        </div>
+                                        <div class="text-sm font-semibold text-white mb-1">Mission {i + 1}</div>
+                                        <div class="text-xs text-neutral-400">Complete a quick quest</div>
+                                        <div class="text-xs text-neutral-500 mt-1">Time: 30m</div>
                                     </div>
-                                    <div class="text-sm font-semibold text-white mb-1">Mission {i + 1}</div>
-                                    <div class="text-xs text-neutral-400">Complete a quick quest</div>
-                                    <div class="text-xs text-neutral-500 mt-1">Time: 30m</div>
-                                </div>
-                            {/each}
+                                {/each}
+                            {:else}
+                                {#each tasks as task (task.id)}
+                                    {@const icon = task.icon ?? '⭐'}
+                                    {@const duration = task.durationMinutes ?? 30}
+                                    {@const points = task.points ?? 30}
+                                    {@const rating = Math.min(5, Math.max(0, task.rating ?? 0))}
+                                    <div 
+                                        class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer"
+                                        role="button"
+                                        tabindex="0"
+                                        aria-label={`Abrir ${task.title}`}
+                                        on:click={() => goto(`/tasks/${task.id}`)}
+                                        on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/tasks/${task.id}`); } }}
+                                    >
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-2xl">{icon}</span>
+                                            <span class="text-xs text-emerald-300 font-semibold">+{points}</span>
+                                        </div>
+                                        <div class="text-sm font-semibold text-white mb-1">{task.title}</div>
+                                        {#if task.summary}
+                                            <div class="text-xs text-neutral-400">{task.summary}</div>
+                                        {/if}
+                                        <div class="text-xs text-neutral-500 mt-1">Time: {duration}m</div>
+                                        <div class="mt-2 flex items-center gap-0.5">
+                                            {#each Array(5) as _, idx}
+                                                <svg class={`w-3 h-3 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                                </svg>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                {/each}
+                            {/if}
                         </div>
                     </div>
                 </div>

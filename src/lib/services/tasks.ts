@@ -1,3 +1,5 @@
+import { BACKEND_URL } from '$lib/config';
+
 interface AuthStore {
     authenticatedFetch(url: string, options?: RequestInit): Promise<Response>;
 }
@@ -14,7 +16,7 @@ export interface Task {
 
 export async function getMindTasks(authStore: AuthStore): Promise<Task[]> {
     try {
-        const response = await authStore.authenticatedFetch('http://localhost:5000/api/tasks/mind/?status=pending');
+        const response = await authStore.authenticatedFetch(`${BACKEND_URL}/api/tasks/mind/?status=pending`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch tasks: ${response.status}`);
@@ -90,7 +92,7 @@ export interface UpdateTaskPayload {
 
 export async function getTaskDetail(authStore: AuthStore, taskId: string): Promise<TaskDetail | null> {
     try {
-        const response = await authStore.authenticatedFetch(`http://localhost:5000/api/tasks/mind/${taskId}`);
+        const response = await authStore.authenticatedFetch(`${BACKEND_URL}/api/tasks/mind/${taskId}`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch task detail: ${response.status}`);

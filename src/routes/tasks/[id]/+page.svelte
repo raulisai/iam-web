@@ -33,7 +33,12 @@
     loading = true;
     error = null;
     try {
-      const data = await getTaskDetail(authStore, taskId);
+      // Intentar primero con 'mind', luego con 'body'
+      let data = await getTaskDetail(authStore, taskId, 'mind');
+      if (!data) {
+        data = await getTaskDetail(authStore, taskId, 'body');
+      }
+      
       if (data) {
         task = data;
         duration = data.params?.duration || 0;
@@ -57,7 +62,7 @@
     error = null;
     successMessage = null;
 
-    if (!taskId) {
+    if (!taskId || !task) {
       error = 'ID de tarea no encontrado.';
       saving = false;
       return;
@@ -73,7 +78,9 @@
         status
       };
 
-      const updated = await updateTask(authStore, taskId, payload);
+      // Determinar el tipo de tarea por la categoría
+      const taskType = task.task_templates.category === 'body' ? 'body' : 'mind';
+      const updated = await updateTask(authStore, taskId, payload, taskType);
       if (updated) {
         task = updated;
         successMessage = '¡Tarea actualizada correctamente!';
@@ -94,7 +101,12 @@
 
 <div class="min-h-[100dvh] bg-neutral-950 text-white">
   <header class="sticky top-0 z-10 h-12 md:h-16 flex items-center gap-3 px-4 md:px-8 border-b border-neutral-800 bg-neutral-900/80 backdrop-blur">
-    <a href="/minde" class="text-neutral-300 hover:text-white text-sm md:text-base transition-colors">← Back</a>
+    <button 
+      onclick={() => window.history.back()} 
+      class="text-neutral-300 hover:text-white text-sm md:text-base transition-colors"
+    >
+      ← Back
+    </button>
     <h1 class="text-sm md:text-lg font-semibold tracking-wide">Editar tarea</h1>
     <div class="ml-auto text-xs md:text-sm text-neutral-400">ID: {taskId}</div>
   </header>
@@ -213,7 +225,7 @@
               </button>
               <button 
                 type="button"
-                onclick={() => goto('/minde')}
+                onclick={() => window.history.back()}
                 class="px-6 py-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg font-medium transition-colors"
               >
                 Cancelar

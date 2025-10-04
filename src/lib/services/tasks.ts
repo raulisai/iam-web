@@ -39,6 +39,31 @@ export async function getMindTasks(authStore: AuthStore): Promise<Task[]> {
     }
 }
 
+export async function getBodyTasks(authStore: AuthStore): Promise<Task[]> {
+    try {
+        const response = await authStore.authenticatedFetch(`${BACKEND_URL}/api/tasks/body/?status=pending`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch body tasks: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        return data.map((task: any) => ({
+            id: task.id,
+            title: task.task_templates.name,
+            durationMinutes: task.task_templates.estimated_minutes,
+            points: task.task_templates.reward_xp,
+            summary: task.task_templates.desc,
+            rating: task.task_templates.difficulty,
+            icon: getIconForCategory(task.task_templates.category)
+        }));
+    } catch (error) {
+        console.error('Error fetching body tasks:', error);
+        return [];
+    }
+}
+
 function getIconForCategory(category: string): string {
     const iconMap: Record<string, string> = {
         'body': '🧘',
@@ -90,9 +115,9 @@ export interface UpdateTaskPayload {
     status?: string;
 }
 
-export async function getTaskDetail(authStore: AuthStore, taskId: string): Promise<TaskDetail | null> {
+export async function getTaskDetail(authStore: AuthStore, taskId: string, taskType: 'mind' | 'body' = 'mind'): Promise<TaskDetail | null> {
     try {
-        const response = await authStore.authenticatedFetch(`${BACKEND_URL}/api/tasks/mind/${taskId}`);
+        const response = await authStore.authenticatedFetch(`${BACKEND_URL}/api/tasks/${taskType}/${taskId}`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch task detail: ${response.status}`);
@@ -106,10 +131,10 @@ export async function getTaskDetail(authStore: AuthStore, taskId: string): Promi
     }
 }
 
-export async function updateTask(authStore: AuthStore, taskId: string, payload: UpdateTaskPayload): Promise<TaskDetail | null> {
+export async function updateTask(authStore: AuthStore, taskId: string, payload: UpdateTaskPayload, taskType: 'mind' | 'body' = 'mind'): Promise<TaskDetail | null> {
     try {
         const response = await authStore.authenticatedFetch(
-            `http://localhost:5000/api/tasks/mind/${taskId}`,
+            `${BACKEND_URL}/api/tasks/${taskType}/${taskId}`,
             {
                 method: 'PUT',
                 body: JSON.stringify(payload)
@@ -125,5 +150,25 @@ export async function updateTask(authStore: AuthStore, taskId: string, payload: 
     } catch (error) {
         console.error('Error updating task:', error);
         return null;
+    }
+}
+
+export async function completeTask(authStore: AuthStore, taskId: string, taskType: 'mind' | 'body' = 'mind'): Promise<boolean> {
+    try {
+        const response = await authStore.authenticatedFetch(
+            `${BACKEND_URL}/api/tasks/${taskType}/${taskId}/complete`,
+            {
+                method: 'POST'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to complete task: ${response.status}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error completing task:', error);
+        return false;
     }
 }

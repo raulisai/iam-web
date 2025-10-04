@@ -4,15 +4,12 @@
     import HealthBar from '../../lib/components/HealthBar.svelte';
     import ProgressRing from '../../lib/components/ProgressRing.svelte';
     import Body from './Body.svelte';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { getAuthContext } from '$lib/stores/auth.svelte';
+    import { getBodyTasks, completeTask, type Task } from '$lib/services/tasks';
 
-    // Datos de ejemplo para tareas físicas
-    const bodyTasks = [
-        { id: 'bt-1', title: 'Morning Stretch', durationMinutes: 15, points: 15, summary: 'Estiramiento matutino completo', rating: 4, icon: '🧘' },
-        { id: 'bt-2', title: 'Cardio Session', durationMinutes: 30, points: 50, summary: '30 min de cardio moderado', rating: 5, icon: '🏃' },
-        { id: 'bt-3', title: 'Strength Training', durationMinutes: 45, points: 60, summary: 'Rutina de fuerza upper body', rating: 3, icon: '💪' },
-        { id: 'bt-4', title: 'Hydration Goal', durationMinutes: 5, points: 10, summary: 'Beber 2L de agua', rating: 5, icon: '💧' },
-        { id: 'bt-5', title: 'Sleep 8 Hours', durationMinutes: 480, points: 100, summary: 'Descanso completo', rating: 4, icon: '😴' }
-    ];
+    let bodyTasks = $state<Task[]>([]);
 
     // Stats de ejemplo
     let energy = 35;
@@ -24,9 +21,31 @@
     let weeklyGoal = 280;
     let weeklyProgress = 165;
 
-    function handleTaskDone(e: CustomEvent<{ id: string }>) {
-        console.log('Tarea física completada:', e.detail.id);
-        // Aquí actualizarías el estado o llamarías a tu API
+    onMount(async () => {
+        const authStore = getAuthContext();
+        await loadBodyTasks();
+    });
+
+    async function loadBodyTasks() {
+        const authStore = getAuthContext();
+        bodyTasks = await getBodyTasks(authStore);
+        console.log('Body tasks obtenidas:', bodyTasks);
+    }
+
+    async function handleTaskDone(e: CustomEvent<{ id: string }>) {
+        const authStore = getAuthContext();
+        const taskId = e.detail.id;
+        console.log('Completando tarea física:', taskId);
+        
+        const success = await completeTask(authStore, taskId, 'body');
+        
+        if (success) {
+            console.log('Tarea completada exitosamente');
+            // Recargar las tareas para actualizar la lista
+            await loadBodyTasks();
+        } else {
+            console.error('Error al completar la tarea');
+        }
     }
 </script>
 
@@ -111,9 +130,56 @@
                         <StatsCard title="Sleep Score" value="85%" subtitle="Last night" icon="💤" trend="up" color="amber" />
                     </div>
                     
-                    <!-- Task carousel -->
-                    <div class="mt-4">
-                        <TaskCarousel title="Physical Tasks" tasks={bodyTasks} on:done={handleTaskDone} />
+                    <!-- Body Tasks Grid -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-white mb-4">Physical Tasks</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {#if bodyTasks.length === 0}
+                                {#each Array(6) as _, i}
+                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-2xl">🏃</span>
+                                            <span class="text-xs text-emerald-300 font-semibold">+50</span>
+                                        </div>
+                                        <div class="text-sm font-semibold text-white mb-1">Physical Task {i + 1}</div>
+                                        <div class="text-xs text-neutral-400">Complete body exercise</div>
+                                        <div class="text-xs text-neutral-500 mt-1">Time: 30m</div>
+                                    </div>
+                                {/each}
+                            {:else}
+                                {#each bodyTasks as task (task.id)}
+                                    {@const icon = task.icon ?? '🏃'}
+                                    {@const duration = task.durationMinutes ?? 30}
+                                    {@const points = task.points ?? 30}
+                                    {@const rating = Math.min(5, Math.max(0, task.rating ?? 0))}
+                                    <div 
+                                        class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer"
+                                        role="button"
+                                        tabindex="0"
+                                        aria-label={`Abrir ${task.title}`}
+                                        on:click={() => goto(`/tasks/${task.id}`)}
+                                        on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/tasks/${task.id}`); } }}
+                                    >
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-2xl">{icon}</span>
+                                            <span class="text-xs text-emerald-300 font-semibold">+{points}</span>
+                                        </div>
+                                        <div class="text-sm font-semibold text-white mb-1">{task.title}</div>
+                                        {#if task.summary}
+                                            <div class="text-xs text-neutral-400">{task.summary}</div>
+                                        {/if}
+                                        <div class="text-xs text-neutral-500 mt-1">Time: {duration}m</div>
+                                        <div class="mt-2 flex items-center gap-0.5">
+                                            {#each Array(5) as _, idx}
+                                                <svg class={`w-3 h-3 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                                </svg>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                {/each}
+                            {/if}
+                        </div>
                     </div>
                 </div>
             </div>

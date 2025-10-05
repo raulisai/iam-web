@@ -76,9 +76,10 @@
                     </p>
                 </div>
                 <button
-                    class="w-10 h-10 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center"
+                    onclick={() => goto("/profile")}
+                    class="w-10 h-10 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-colors"
                 >
-                    <span class="text-lg">⚙️</span>
+                    <span class="text-lg">👤</span>
                 </button>
             </div>
         </div>
@@ -205,11 +206,15 @@
                 <h1 class="text-4xl font-bold text-white">Welcome back!</h1>
                 <p class="text-sm text-white/60 mt-2">Let's make today count</p>
             </div>
-            <button
-                class="w-12 h-12 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-colors"
-            >
-                <span class="text-xl">⚙️</span>
-            </button>
+            <div class="flex items-center gap-3">
+                <button
+                    onclick={() => goto("/profile")}
+                    class="w-12 h-12 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-colors"
+                    title="Mi Perfil"
+                >
+                    <span class="text-xl">👤</span>
+                </button>
+            </div>
         </div>
 
         <!-- Overall Score y Quick Stats -->

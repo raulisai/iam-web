@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import ChatMessage from '../../lib/components/ChatMessage.svelte';
     import type { Message } from '../../lib/components/ChatMessage.svelte';
     import { 
@@ -11,6 +11,7 @@
         type ChatSession,
         type ChatMessage as ChatMessageType
     } from '../../lib/services/chat';
+    import { speechRecognition, textToSpeech } from '../../lib/services/speech';
     
     let messages: Message[] = [];
     let inputValue = '';
@@ -20,6 +21,14 @@
     let isLoading = true;
     let error = '';
     let isSidebarOpen = false;
+    
+    // Voice features
+    let isListening = false;
+    let isSpeaking = false;
+    let speechSupported = false;
+    let ttsSupported = false;
+    let autoSpeak = false; // Auto-speak AI responses
+    let isOnline = true; // Network status
     
     // Agent profiles
     const agents = [
@@ -36,6 +45,21 @@
         try {
             isLoading = true;
             error = '';
+            
+            // Check voice support
+            speechSupported = speechRecognition.isSupported();
+            ttsSupported = textToSpeech.isSupported();
+            
+            // Check network status (only in browser)
+            if (typeof navigator !== 'undefined') {
+                isOnline = navigator.onLine;
+            }
+            
+            // Listen for online/offline events (only in browser)
+            if (typeof window !== 'undefined') {
+                window.addEventListener('online', handleOnline);
+                window.addEventListener('offline', handleOffline);
+            }
             
             // Get existing sessions
             await loadAllSessions();
@@ -55,6 +79,32 @@
             isLoading = false;
         }
     });
+    
+    onDestroy(() => {
+        // Clean up speech services
+        stopListening();
+        stopSpeaking();
+        
+        // Remove event listeners (only in browser)
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        }
+    });
+    
+    function handleOnline() {
+        isOnline = true;
+        console.log('Network connection restored');
+    }
+    
+    function handleOffline() {
+        isOnline = false;
+        if (isListening) {
+            stopListening();
+        }
+        error = 'Network connection lost. Voice recognition requires an active internet connection.';
+        setTimeout(() => error = '', 5000);
+    }
     
     async function loadAllSessions() {
         try {
@@ -198,6 +248,14 @@
             // Reload messages to get the AI response
             await loadMessages();
             
+            // Auto-speak AI response if enabled
+            if (autoSpeak && messages.length > 0) {
+                const lastMessage = messages[messages.length - 1];
+                if (lastMessage.role === 'assistant') {
+                    speakText(lastMessage.content);
+                }
+            }
+            
         } catch (err) {
             console.error('Error sending message:', err);
             error = 'Failed to send message.';
@@ -208,6 +266,117 @@
             );
         } finally {
             isTyping = false;
+        }
+    }
+    
+    // Voice to Text - Start listening
+    function startListening() {
+        if (!speechSupported) {
+            error = 'Speech recognition is not supported in your browser.';
+            setTimeout(() => error = '', 5000);
+            return;
+        }
+        
+        // Check network status
+        if (!isOnline) {
+            error = 'No internet connection. Voice recognition requires an active internet connection.';
+            setTimeout(() => error = '', 5000);
+            return;
+        }
+        
+        // Clear any previous errors
+        error = '';
+        
+        // Stop any current speech
+        stopSpeaking();
+        
+        speechRecognition.start(
+            (text) => {
+                inputValue = text;
+                // Clear error if transcription is working
+                error = '';
+            },
+            () => {
+                isListening = false;
+            },
+            (err) => {
+                // Only log network errors once, not repeatedly
+                if (!err.includes('Network error')) {
+                    console.error('Speech recognition error:', err);
+                }
+                error = err;
+                isListening = false;
+                
+                // Auto-clear error after 8 seconds
+                setTimeout(() => {
+                    if (error === err) {
+                        error = '';
+                    }
+                }, 8000);
+            }
+        );
+        
+        isListening = true;
+    }
+    
+    // Stop listening
+    function stopListening() {
+        try {
+            speechRecognition.stop();
+        } catch (err) {
+            console.error('Error stopping speech recognition:', err);
+        } finally {
+            isListening = false;
+        }
+    }
+    
+    // Toggle listening
+    function toggleListening() {
+        if (isListening) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    }
+    
+    // Text to Speech - Speak text
+    function speakText(text: string) {
+        if (!ttsSupported) {
+            error = 'Text-to-speech is not supported in your browser.';
+            return;
+        }
+        
+        textToSpeech.speak(text, {
+            rate: 1.0,
+            pitch: 1.0,
+            volume: 1.0,
+            onEnd: () => {
+                isSpeaking = false;
+            },
+            onError: (err) => {
+                console.error('Text-to-speech error:', err);
+                isSpeaking = false;
+            }
+        });
+        
+        isSpeaking = true;
+    }
+    
+    // Stop speaking
+    function stopSpeaking() {
+        textToSpeech.stop();
+        isSpeaking = false;
+    }
+    
+    // Speak the last AI message
+    function speakLastMessage() {
+        const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
+        if (lastAssistantMessage) {
+            if (isSpeaking) {
+                stopSpeaking();
+            } else {
+                speakText(lastAssistantMessage.content);
+            }
         }
     }
     
@@ -363,28 +532,78 @@
 
         <!-- Input area -->
         <div class="border-t border-white/10 p-4">
+            <!-- Voice controls -->
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    {#if speechSupported}
+                        <div class="relative group">
+                            <button
+                                on:click={toggleListening}
+                                class="p-2 rounded-lg transition-all {isListening ? 'bg-red-500/20 text-red-400' : 'bg-neutral-800/50 text-white/70 hover:bg-neutral-800'}"
+                                aria-label={isListening ? 'Stop listening' : 'Start voice input (requires internet)'}>
+                                {#if isListening}
+                                    <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                                    </svg>
+                                {:else}
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                    </svg>
+                                {/if}
+                            </button>
+                            <!-- Tooltip -->
+                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-neutral-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                Voice input (requires internet)
+                            </div>
+                        </div>
+                    {/if}
+                    
+                    {#if ttsSupported}
+                        <button
+                            on:click={speakLastMessage}
+                            class="p-2 rounded-lg transition-all {isSpeaking ? 'bg-purple-500/20 text-purple-400' : 'bg-neutral-800/50 text-white/70 hover:bg-neutral-800'}"
+                            aria-label={isSpeaking ? 'Stop speaking' : 'Speak last message'}>
+                            {#if isSpeaking}
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                                </svg>
+                            {:else}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                                </svg>
+                            {/if}
+                        </button>
+                        
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                bind:checked={autoSpeak}
+                                class="w-3.5 h-3.5 rounded bg-neutral-800 border-white/10 text-purple-500 focus:ring-purple-500/50"
+                            />
+                            <span class="text-xs text-white/60">Auto-speak</span>
+                        </label>
+                    {/if}
+                </div>
+            </div>
+            
             <div class="flex gap-2">
                 <div class="flex-1 relative">
                     <input
                         type="text"
                         bind:value={inputValue}
                         on:keydown={handleKeydown}
-                        placeholder="Ask your AI assistant..."
+                        placeholder={isListening ? 'Listening...' : 'Ask your AI assistant...'}
                         class="w-full px-4 py-3 rounded-xl bg-neutral-900/60 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                        disabled={isListening}
                     />
-                    
-                    <!-- Quick actions -->
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                        <button class="w-7 h-7 rounded-lg bg-neutral-800/50 flex items-center justify-center text-xs">
-                            📎
-                        </button>
-                    </div>
                 </div>
                 
                 <button 
                     on:click={sendMessage}
                     aria-label="Send message"
                     class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 active:scale-95 transition-transform"
+                    disabled={isListening}
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
@@ -532,28 +751,74 @@
 
         <!-- Input area -->
         <div class="border-t border-white/10 px-8 py-6">
-            <!-- Suggested prompts -->
-            <div class="flex gap-3 mb-4">
-                <button 
-                    on:click={() => handleSuggestedPrompt('Analyze my progress this week')}
-                    class="px-4 py-2 rounded-lg bg-neutral-900/60 border border-white/10 text-sm text-white/70 whitespace-nowrap hover:bg-neutral-900 transition-colors">
-                    📊 Analyze my progress
-                </button>
-                <button 
-                    on:click={() => handleSuggestedPrompt('Suggest improvements for my goals')}
-                    class="px-4 py-2 rounded-lg bg-neutral-900/60 border border-white/10 text-sm text-white/70 whitespace-nowrap hover:bg-neutral-900 transition-colors">
-                    💡 Suggest improvements
-                </button>
-                <button 
-                    on:click={() => handleSuggestedPrompt('Plan my day')}
-                    class="px-4 py-2 rounded-lg bg-neutral-900/60 border border-white/10 text-sm text-white/70 whitespace-nowrap hover:bg-neutral-900 transition-colors">
-                    📅 Plan my day
-                </button>
-                <button 
-                    on:click={() => handleSuggestedPrompt('Help me with my failures')}
-                    class="px-4 py-2 rounded-lg bg-neutral-900/60 border border-white/10 text-sm text-white/70 whitespace-nowrap hover:bg-neutral-900 transition-colors">
-                    ❓ Help with failures
-                </button>
+            <!-- Voice controls and suggested prompts -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex gap-3">
+                    <button 
+                        on:click={() => handleSuggestedPrompt('Analyze my progress this week')}
+                        class="px-4 py-2 rounded-lg bg-neutral-900/60 border border-white/10 text-sm text-white/70 whitespace-nowrap hover:bg-neutral-900 transition-colors">
+                        📊 Analyze my progress
+                    </button>
+                    <button 
+                        on:click={() => handleSuggestedPrompt('Suggest improvements for my goals')}
+                        class="px-4 py-2 rounded-lg bg-neutral-900/60 border border-white/10 text-sm text-white/70 whitespace-nowrap hover:bg-neutral-900 transition-colors">
+                        💡 Suggest improvements
+                    </button>
+                    <button 
+                        on:click={() => handleSuggestedPrompt('Plan my day')}
+                        class="px-4 py-2 rounded-lg bg-neutral-900/60 border border-white/10 text-sm text-white/70 whitespace-nowrap hover:bg-neutral-900 transition-colors">
+                        📅 Plan my day
+                    </button>
+                </div>
+                
+                <!-- Voice controls -->
+                <div class="flex items-center gap-3">
+                    {#if speechSupported}
+                        <button
+                            on:click={toggleListening}
+                            class="p-2.5 rounded-lg transition-all {isListening ? 'bg-red-500/20 text-red-400' : 'bg-neutral-800/50 text-white/70 hover:bg-neutral-800'}"
+                            aria-label={isListening ? 'Stop listening' : 'Start voice input'}
+                            title={isListening ? 'Stop listening' : 'Start voice input'}>
+                            {#if isListening}
+                                <svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                                </svg>
+                            {:else}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                </svg>
+                            {/if}
+                        </button>
+                    {/if}
+                    
+                    {#if ttsSupported}
+                        <button
+                            on:click={speakLastMessage}
+                            class="p-2.5 rounded-lg transition-all {isSpeaking ? 'bg-purple-500/20 text-purple-400' : 'bg-neutral-800/50 text-white/70 hover:bg-neutral-800'}"
+                            aria-label={isSpeaking ? 'Stop speaking' : 'Speak last message'}
+                            title={isSpeaking ? 'Stop speaking' : 'Speak last message'}>
+                            {#if isSpeaking}
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                                </svg>
+                            {:else}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                                </svg>
+                            {/if}
+                        </button>
+                        
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                bind:checked={autoSpeak}
+                                class="w-4 h-4 rounded bg-neutral-800 border-white/10 text-purple-500 focus:ring-purple-500/50"
+                            />
+                            <span class="text-sm text-white/60">Auto-speak</span>
+                        </label>
+                    {/if}
+                </div>
             </div>
 
             <div class="flex gap-3">
@@ -562,22 +827,17 @@
                         type="text"
                         bind:value={inputValue}
                         on:keydown={handleKeydown}
-                        placeholder="Ask your AI assistant..."
-                        class="w-full px-5 py-4 rounded-xl bg-neutral-900/60 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                        placeholder={isListening ? 'Listening...' : 'Ask your AI assistant...'}
+                        class="w-full px-5 py-4 rounded-xl bg-neutral-900/60 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50 disabled:opacity-50"
+                        disabled={isListening}
                     />
-                    
-                    <!-- Quick actions -->
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                        <button class="w-8 h-8 rounded-lg bg-neutral-800/50 flex items-center justify-center text-sm hover:bg-neutral-800 transition-colors">
-                            📎
-                        </button>
-                    </div>
                 </div>
                 
                 <button 
                     on:click={sendMessage}
                     aria-label="Send message"
-                    class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform"
+                    class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isListening}
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>

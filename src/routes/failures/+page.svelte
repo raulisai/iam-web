@@ -139,9 +139,8 @@
 </div>
 
 <!-- Vista escritorio -->
-<div class="hidden md:flex h-screen bg-neutral-950">
-    <div class="flex-1 overflow-y-auto">
-        <div class="max-w-6xl mx-auto p-8">
+<div class="hidden md:block bg-neutral-950">
+    <div class="max-w-6xl mx-auto p-8">
             <!-- Header -->
             <div class="mb-8">
                 <h1 class="text-4xl font-bold text-white">Failure Analysis</h1>
@@ -193,5 +192,4 @@
             <!-- Floating action button -->
             <AddFailureForm on:submit={handleFailureSubmit} />
         </div>
-    </div>
 </div>

@@ -93,9 +93,8 @@
 </div>
 
 <!-- Vista escritorio -->
-<div class="hidden md:flex h-screen bg-neutral-950">
-    <div class="flex-1 p-8 overflow-auto">
-        <div class="max-w-7xl mx-auto">
+<div class="hidden md:block bg-neutral-950">
+    <div class="max-w-7xl mx-auto p-8">
             <h1 class="text-3xl font-bold text-white mb-8">Body Analytics</h1>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -184,5 +183,4 @@
                 </div>
             </div>
         </div>
-    </div>
 </div>

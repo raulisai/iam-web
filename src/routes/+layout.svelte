@@ -41,15 +41,15 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="bg-neutral-950 text-white h-dvh overflow-hidden">
+<div class="bg-neutral-950 text-white min-h-dvh">
 	{#if authStore.isAuthenticated}
 		<!-- Layout para usuarios autenticados -->
-		<div class="h-full flex flex-col">
+		<div class="min-h-dvh flex flex-col">
 			<!-- Navbar con información del usuario y logout -->
 			<NavBar user={authStore.user} />
 			
 			<!-- Contenido principal -->
-			<div class="flex-1 overflow-auto">
+			<div class="flex-1">
 				{@render children?.()}
 			</div>
 
@@ -60,7 +60,7 @@
 		</div>
 	{:else}
 		<!-- Layout para páginas públicas (login/register) -->
-		<div class="h-full">
+		<div class="min-h-dvh">
 			{@render children?.()}
 		</div>
 	{/if}

@@ -7,6 +7,7 @@
         createChatSession, 
         getChatMessages, 
         createChatMessage,
+        deleteChatSession,
         type ChatSession,
         type ChatMessage as ChatMessageType
     } from '../../lib/services/chat';
@@ -15,8 +16,10 @@
     let inputValue = '';
     let isTyping = false;
     let currentSession: ChatSession | null = null;
+    let allSessions: ChatSession[] = [];
     let isLoading = true;
     let error = '';
+    let isSidebarOpen = false;
     
     // Agent profiles
     const agents = [
@@ -35,25 +38,15 @@
             error = '';
             
             // Get existing sessions
-            const sessions = await getChatSessions();
+            await loadAllSessions();
             
-            if (sessions.length > 0) {
+            if (allSessions.length > 0) {
                 // Use the most recent session
-                currentSession = sessions[0];
+                currentSession = allSessions[0];
                 await loadMessages();
             } else {
                 // Create a new session
-                currentSession = await createChatSession({
-                    title: 'New Chat'
-                });
-                
-                // Add welcome message
-                messages = [{
-                    id: '1',
-                    role: 'system',
-                    content: 'Connected to your AI assistant. How can I help you today?',
-                    timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                }];
+                await createNewChat();
             }
         } catch (err) {
             console.error('Error initializing chat:', err);
@@ -62,6 +55,74 @@
             isLoading = false;
         }
     });
+    
+    async function loadAllSessions() {
+        try {
+            allSessions = await getChatSessions();
+            // Sort by most recent first
+            allSessions.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        } catch (err) {
+            console.error('Error loading sessions:', err);
+            error = 'Failed to load chat sessions.';
+        }
+    }
+    
+    async function createNewChat() {
+        try {
+            currentSession = await createChatSession({
+                title: 'New Chat'
+            });
+            
+            // Reload sessions list
+            await loadAllSessions();
+            
+            // Add welcome message
+            messages = [{
+                id: 'welcome',
+                role: 'system',
+                content: 'Connected to your AI assistant. How can I help you today?',
+                timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+            }];
+            
+            // Close sidebar on mobile
+            isSidebarOpen = false;
+        } catch (err) {
+            console.error('Error creating new chat:', err);
+            error = 'Failed to create new chat.';
+        }
+    }
+    
+    async function selectSession(session: ChatSession) {
+        currentSession = session;
+        await loadMessages();
+        isSidebarOpen = false;
+    }
+    
+    async function deleteSession(sessionId: string, event: Event) {
+        event.stopPropagation();
+        
+        if (!confirm('Are you sure you want to delete this conversation?')) {
+            return;
+        }
+        
+        try {
+            await deleteChatSession(sessionId);
+            await loadAllSessions();
+            
+            // If we deleted the current session, create a new one
+            if (currentSession?.id === sessionId) {
+                if (allSessions.length > 0) {
+                    currentSession = allSessions[0];
+                    await loadMessages();
+                } else {
+                    await createNewChat();
+                }
+            }
+        } catch (err) {
+            console.error('Error deleting session:', err);
+            error = 'Failed to delete conversation.';
+        }
+    }
     
     async function loadMessages() {
         if (!currentSession) return;
@@ -116,7 +177,7 @@
         isTyping = true;
         
         try {
-            // Create user message in backend
+            // Create user message in backend - backend automatically generates AI response
             const userMsg = await createChatMessage(currentSession.id, {
                 role: 'user',
                 content: userMessageContent
@@ -131,8 +192,11 @@
                 } : m
             );
             
-            // Simulate AI processing (you'll need to integrate with actual AI service)
-            await simulateAIResponse(userMessageContent);
+            // Wait a bit for the backend to process the AI response
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Reload messages to get the AI response
+            await loadMessages();
             
         } catch (err) {
             console.error('Error sending message:', err);
@@ -144,51 +208,6 @@
             );
         } finally {
             isTyping = false;
-        }
-    }
-    
-    async function simulateAIResponse(userMessage: string) {
-        if (!currentSession) return;
-        
-        // TODO: Replace with actual AI service call
-        const aiResponse = generateMockAIResponse(userMessage);
-        
-        try {
-            const assistantMsg = await createChatMessage(currentSession.id, {
-                role: 'assistant',
-                content: aiResponse
-            });
-            
-            const assistantMessage: Message = {
-                id: assistantMsg.id,
-                role: 'assistant',
-                content: aiResponse,
-                timestamp: new Date(assistantMsg.created_at).toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                }),
-                status: 'sent',
-                agentName: selectedAgent.name
-            };
-            
-            messages = [...messages, assistantMessage];
-        } catch (err) {
-            console.error('Error creating AI response:', err);
-            error = 'Failed to get AI response.';
-        }
-    }
-    
-    function generateMockAIResponse(userMessage: string): string {
-        const lowerMsg = userMessage.toLowerCase();
-        
-        if (lowerMsg.includes('focus') || lowerMsg.includes('today')) {
-            return 'Based on your current stats, I recommend focusing on: 1) Complete your morning workout (Body score is 75%), 2) Finish the pending project task (High severity failure), and 3) Do your daily meditation (Mind health boost). Would you like me to create a detailed schedule?';
-        } else if (lowerMsg.includes('progress') || lowerMsg.includes('analyze')) {
-            return "I've analyzed your progress this week. You're doing great! Your Mind score has improved by 15%, and you've completed 80% of your tasks. Keep up the good work!";
-        } else if (lowerMsg.includes('help') || lowerMsg.includes('improve')) {
-            return 'I can help you with several things: tracking your goals, analyzing your progress, suggesting improvements, planning your day, and helping you overcome failures. What would you like to focus on?';
-        } else {
-            return `I understand you're asking about "${userMessage}". Let me analyze this for you. As your AI assistant, I'm here to help you optimize your mind, body, and soul journey. Could you provide more details about what specific aspect you'd like help with?`;
         }
     }
     
@@ -216,7 +235,64 @@
 {:else}
 
 <!-- Vista mobile-only -->
-<div class="md:hidden h-[calc(100dvh-4rem)] overflow-hidden bg-neutral-950">
+<div class="md:hidden h-[calc(100dvh-4rem)] overflow-hidden bg-neutral-950 relative">
+    <!-- Sidebar móvil -->
+    {#if isSidebarOpen}
+        <div class="absolute inset-0 z-50 flex">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black/60" on:click={() => isSidebarOpen = false} on:keydown={(e) => e.key === 'Escape' && (isSidebarOpen = false)} role="button" tabindex="0" aria-label="Close sidebar"></div>
+            
+            <!-- Sidebar content -->
+            <div class="relative w-64 bg-neutral-900 border-r border-white/10 flex flex-col">
+                <!-- Header del sidebar -->
+                <div class="p-4 border-b border-white/10">
+                    <button 
+                        on:click={createNewChat}
+                        class="w-full px-4 py-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white text-sm font-medium flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Chat
+                    </button>
+                </div>
+                
+                <!-- Lista de conversaciones -->
+                <div class="flex-1 overflow-y-auto p-2">
+                    {#each allSessions as session}
+                        <div 
+                            class="w-full px-3 py-3 rounded-lg mb-1 transition-all flex items-center justify-between group cursor-pointer
+                                   {currentSession?.id === session.id 
+                                     ? 'bg-purple-500/20 text-white' 
+                                     : 'text-white/70 hover:bg-white/5'}"
+                            on:click={() => selectSession(session)}
+                            on:keydown={(e) => e.key === 'Enter' && selectSession(session)}
+                            role="button"
+                            tabindex="0"
+                        >
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm truncate">{session.title || 'New Chat'}</div>
+                                <div class="text-xs text-white/40 mt-0.5">
+                                    {new Date(session.updated_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div 
+                                on:click={(e) => deleteSession(session.id, e)}
+                                on:keydown={(e) => e.key === 'Enter' && deleteSession(session.id, e)}
+                                class="opacity-0 group-hover:opacity-100 ml-2 p-1 hover:bg-red-500/20 rounded transition-all cursor-pointer"
+                                role="button"
+                                tabindex="0"
+                                aria-label="Delete chat">
+                                <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        </div>
+    {/if}
+    
     <div class="flex flex-col h-full">
         <!-- Error message -->
         {#if error}
@@ -228,7 +304,17 @@
         <!-- Header con selector de agente -->
         <div class="px-4 py-3 border-b border-white/10">
             <div class="flex items-center justify-between mb-2">
-                <h1 class="text-lg font-bold text-white">AI Assistant</h1>
+                <div class="flex items-center gap-2">
+                    <button 
+                        on:click={() => isSidebarOpen = !isSidebarOpen}
+                        class="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                        aria-label="Toggle sidebar">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <h1 class="text-lg font-bold text-white">AI Assistant</h1>
+                </div>
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full {selectedAgent.status === 'online' ? 'bg-emerald-400' : 'bg-neutral-500'}"></span>
                     <span class="text-xs text-white/60">{selectedAgent.status}</span>
@@ -334,8 +420,59 @@
 </div>
 
 <!-- Vista escritorio -->
-<div class="hidden md:flex h-screen bg-neutral-950">
-    <div class="flex-1 flex flex-col max-w-5xl mx-auto w-full">
+<div class="hidden md:flex h-[calc(100dvh-4rem)] bg-neutral-950">
+    <!-- Sidebar escritorio -->
+    <div class="w-64 bg-neutral-900 border-r border-white/10 flex flex-col">
+        <!-- Header del sidebar -->
+        <div class="p-4 border-b border-white/10">
+            <button 
+                on:click={createNewChat}
+                class="w-full px-4 py-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white text-sm font-medium flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-purple-500/20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Chat
+            </button>
+        </div>
+        
+        <!-- Lista de conversaciones -->
+        <div class="flex-1 overflow-y-auto p-3">
+            <h3 class="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2 px-2">Recent Chats</h3>
+            {#each allSessions as session}
+                <div 
+                    class="w-full px-3 py-3 rounded-lg mb-1 transition-all flex items-center justify-between group cursor-pointer
+                           {currentSession?.id === session.id 
+                             ? 'bg-purple-500/20 text-white' 
+                             : 'text-white/70 hover:bg-white/5'}"
+                    on:click={() => selectSession(session)}
+                    on:keydown={(e) => e.key === 'Enter' && selectSession(session)}
+                    role="button"
+                    tabindex="0"
+                >
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm truncate font-medium">{session.title || 'New Chat'}</div>
+                        <div class="text-xs text-white/40 mt-0.5">
+                            {new Date(session.updated_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div 
+                        on:click={(e) => deleteSession(session.id, e)}
+                        on:keydown={(e) => e.key === 'Enter' && deleteSession(session.id, e)}
+                        class="opacity-0 group-hover:opacity-100 ml-2 p-1.5 hover:bg-red-500/20 rounded transition-all cursor-pointer"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Delete chat">
+                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </div>
+                </div>
+            {/each}
+        </div>
+    </div>
+    
+    <!-- Main chat area -->
+    <div class="flex-1 flex flex-col">
         <!-- Error message -->
         {#if error}
             <div class="px-8 py-3 bg-red-500/10 border-b border-red-500/30">
@@ -346,7 +483,7 @@
         <!-- Header con selector de agente -->
         <div class="px-8 py-6 border-b border-white/10">
             <div class="flex items-center justify-between mb-4">
-                <h1 class="text-3xl font-bold text-white">AI Assistant</h1>
+                <h1 class="text-3xl font-bold text-white">{currentSession?.title || 'New Chat'}</h1>
                 <div class="flex items-center gap-3">
                     <span class="w-2.5 h-2.5 rounded-full {selectedAgent.status === 'online' ? 'bg-emerald-400' : 'bg-neutral-500'}"></span>
                     <span class="text-sm text-white/60">{selectedAgent.status}</span>

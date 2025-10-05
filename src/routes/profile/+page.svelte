@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { getUserProfile, updateUserProfile, type UserProfile } from '$lib/services/profile';
+    import { initializeAuthStore, setAuthContext } from '$lib/stores/auth.svelte';
 	import CreateProfileForm from './CreateProfileForm.svelte';
 
 	let profile = $state<UserProfile | null>(null);
@@ -11,11 +12,15 @@
 	let successMessage = $state<string | null>(null);
 	let profileNotFound = $state(false);
 
+    // Inicializar store de autenticación
+	const authStore = initializeAuthStore();
+
 	// Formulario de edición
 	let editForm = $state<UserProfile>({});
 
 	onMount(async () => {
 		await loadProfile();
+        console.log('Auth Store:', authStore.user);
 	});
 
 	async function loadProfile() {
@@ -160,13 +165,14 @@
 					<div class="flex items-start justify-between">
 						<div class="flex items-center gap-4">
 							<div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-3xl">
-								👤
+								{authStore.user?.name?.charAt(0).toUpperCase() || '👤'}
 							</div>
 							<div>
 								<h2 class="text-xl font-bold text-white">
-									{profile.gender === 'male' ? 'Usuario' : profile.gender === 'female' ? 'Usuaria' : 'Usuario'}
+									{authStore.user?.name || 'Usuario'}
 								</h2>
-								<p class="text-white/60 text-sm">Miembro desde {new Date(profile.created_at || '').toLocaleDateString('es-ES')}</p>
+								<p class="text-white/60 text-sm">{authStore.user?.email || ''}</p>
+								<p class="text-white/40 text-xs mt-1">Miembro desde {new Date(profile.created_at || '').toLocaleDateString('es-ES')}</p>
 							</div>
 						</div>
 						

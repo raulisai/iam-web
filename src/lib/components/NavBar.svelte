@@ -64,6 +64,9 @@
 				<a href="/goals" class="text-neutral-300 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">
 					Objetivos
 				</a>
+				<a href="/failures" class="text-neutral-300 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">
+					Failures
+				</a>
 				<a href="/minde" class="text-neutral-300 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">
 					Mente
 				</a>

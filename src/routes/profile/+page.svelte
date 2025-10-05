@@ -20,7 +20,6 @@
 
 	onMount(async () => {
 		await loadProfile();
-        console.log('Auth Store:', authStore.user);
 	});
 
 	async function loadProfile() {

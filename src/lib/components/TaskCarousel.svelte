@@ -41,8 +41,12 @@
                                 <div class="absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-yellow-400/10 blur-xl"></div>
                             </div>
                             <div class="relative h-full p-2 flex flex-col">
-                                <button aria-label="Done" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center" on:click|stopPropagation={() => onDone(`demo-${i+1}`)}>
-                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                <button 
+                                    aria-label="Done" 
+                                    class="absolute top-1 right-1 w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400/50 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-110 active:scale-95 transition-all duration-200 hover:rotate-12" 
+                                    on:click|stopPropagation={() => onDone(`demo-${i+1}`)}
+                                >
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                                 </button>
                                 <div class="flex items-center gap-2">
                                     <div class="w-6 h-6 rounded-full bg-neutral-700/80 border border-white/10 flex items-center justify-center text-sm">⭐</div>
@@ -55,12 +59,15 @@
                                     <span>Time: 30m</span>
                                 </div>
                                 <div class="mt-1 text-[10px] text-neutral-200/80 line-clamp-2 leading-snug">Complete a quick quest to earn XP.</div>
-                                <div class="mt-auto pt-1 flex items-center gap-0.5">
-                                    {#each Array(5) as _, idx}
-                                        <svg class={`w-3.5 h-3.5 ${idx < 3 ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
-                                        </svg>
-                                    {/each}
+                                <div class="mt-auto pt-1 flex items-center justify-between">
+                                    <div class="flex items-center gap-0.5">
+                                        {#each Array(5) as _, idx}
+                                            <svg class={`w-3.5 h-3.5 ${idx < 3 ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                            </svg>
+                                        {/each}
+                                    </div>
+                                    <div class="text-[11px] text-emerald-300/90 font-bold">+30</div>
                                 </div>
                             </div>
                         </div>
@@ -72,7 +79,7 @@
                         {@const points = t.points ?? 30}
                         {@const rating = Math.min(5, Math.max(0, t.rating ?? 0))}
                         <div
-                            class="shrink-0 w-40 h-24 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.8)] relative overflow-hidden"
+                            class="shrink-0 w-40 h-32 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.8)] relative overflow-hidden"
                             role="button"
                             tabindex="0"
                             aria-label={`Abrir ${t.title}`}
@@ -84,15 +91,18 @@
                                 <div class="absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-yellow-400/10 blur-xl"></div>
                             </div>
                             <div class="relative h-full p-2 flex flex-col">
-                                <button aria-label="Done" class="absolute top-16 right-2 w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/30 active:bg-emerald-500/40" on:click|stopPropagation={() => onDone(t.id)}>
-                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                <button 
+                                    aria-label="Done" 
+                                    class="absolute top-1 right-1 w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400/50 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-110 active:scale-95 transition-all duration-200 hover:rotate-12" 
+                                    on:click|stopPropagation={() => onDone(t.id)}
+                                >
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                                 </button>
                                 <div class="flex items-center gap-2">
                                     <div class="w-6 h-6 rounded-full bg-neutral-700/80 border border-white/10 flex items-center justify-center text-sm">{icon}</div>
                                     <div class="flex-1 min-w-0">
                                         <div class="text-[11px] font-semibold text-white/90 truncate">{t.title}</div>
                                     </div>
-                                    <div class="text-[10px] text-emerald-300/90 font-semibold">+{points}</div>
                                 </div>
                                 <div class="mt-1 text-[10px] text-neutral-300/80 flex items-center gap-2">
                                     <span>Time: {duration}m</span>
@@ -100,12 +110,15 @@
                                 {#if t.summary}
                                     <div class="mt-1 text-[10px] text-neutral-200/80 line-clamp-2 leading-snug">{t.summary}</div>
                                 {/if}
-                                <div class="mt-auto pt-1 flex items-center gap-0.5">
-                                    {#each Array(5) as _, idx}
-                                        <svg class={`w-3.5 h-3.5 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
-                                        </svg>
-                                    {/each}
+                                <div class="mt-auto pt-1 flex items-center justify-between">
+                                    <div class="flex items-center gap-0.5">
+                                        {#each Array(5) as _, idx}
+                                            <svg class={`w-3.5 h-3.5 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                            </svg>
+                                        {/each}
+                                    </div>
+                                    <div class="text-[11px] text-emerald-300/90 font-bold">+{points}</div>
                                 </div>
                             </div>
                         </div>

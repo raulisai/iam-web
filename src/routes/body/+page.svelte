@@ -9,6 +9,7 @@
     import { getAuthContext } from '$lib/stores/auth.svelte';
     import { getBodyTasks, completeTask, type Task } from '$lib/services/tasks';
     import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
+    import { toastStore } from '$lib/stores/toast.svelte';
 
     let bodyTasks = $state<Task[]>([]);
     let snapshot = $state<PerformanceSnapshot | null>(null);
@@ -31,8 +32,10 @@
     let weeklyGoal = 280;
     let weeklyProgress = 165;
 
+    // Obtener authStore una vez al inicializar el componente
+    const authStore = getAuthContext();
+
     onMount(async () => {
-        const authStore = getAuthContext();
         await Promise.all([
             loadBodyTasks(),
             loadStats()
@@ -40,13 +43,11 @@
     });
 
     async function loadBodyTasks() {
-        const authStore = getAuthContext();
         bodyTasks = await getBodyTasks(authStore);
         console.log('Body tasks obtenidas:', bodyTasks);
     }
 
     async function loadStats() {
-        const authStore = getAuthContext();
         isLoadingStats = true;
         
         try {
@@ -81,18 +82,23 @@
     }
 
     async function handleTaskDone(e: CustomEvent<{ id: string }>) {
-        const authStore = getAuthContext();
         const taskId = e.detail.id;
+        const task = bodyTasks.find(t => t.id === taskId);
+        const points = task?.points ?? 50;
+        
         console.log('Completando tarea física:', taskId);
         
         const success = await completeTask(authStore, taskId, 'body');
         
         if (success) {
             console.log('Tarea completada exitosamente');
+            toastStore.success('¡Tarea completada!', points);
             // Recargar las tareas para actualizar la lista
             await loadBodyTasks();
+            await loadStats();
         } else {
             console.error('Error al completar la tarea');
+            toastStore.error('Error al completar la tarea');
         }
     }
 </script>
@@ -183,14 +189,23 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {#if bodyTasks.length === 0}
                                 {#each Array(6) as _, i}
-                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900">
-                                        <div class="flex items-center justify-between mb-2">
+                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 relative">
+                                        <button 
+                                            aria-label="Done" 
+                                            class="absolute top-2 right-2 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400/50 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-110 active:scale-95 transition-all duration-200 hover:rotate-12 z-10" 
+                                            onclick={(e) => { e.stopPropagation(); }}
+                                        >
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                        </button>
+                                        <div class="flex items-center mb-2">
                                             <span class="text-2xl">🏃</span>
-                                            <span class="text-xs text-emerald-300 font-semibold">+50</span>
                                         </div>
                                         <div class="text-sm font-semibold text-white mb-1">Physical Task {i + 1}</div>
                                         <div class="text-xs text-neutral-400">Complete body exercise</div>
                                         <div class="text-xs text-neutral-500 mt-1">Time: 30m</div>
+                                        <div class="mt-auto pt-2 flex items-center justify-end">
+                                            <span class="text-xs text-emerald-300 font-bold">+50</span>
+                                        </div>
                                     </div>
                                 {/each}
                             {:else}
@@ -200,28 +215,37 @@
                                     {@const points = task.points ?? 30}
                                     {@const rating = Math.min(5, Math.max(0, task.rating ?? 0))}
                                     <div 
-                                        class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer"
+                                        class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer relative"
                                         role="button"
                                         tabindex="0"
                                         aria-label={`Abrir ${task.title}`}
                                         onclick={() => goto(`/tasks/${task.id}`)}
                                         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/tasks/${task.id}`); } }}
                                     >
-                                        <div class="flex items-center justify-between mb-2">
+                                        <button 
+                                            aria-label="Done" 
+                                            class="absolute top-2 right-2 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400/50 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-110 active:scale-95 transition-all duration-200 hover:rotate-12 z-10" 
+                                            onclick={(e) => { e.stopPropagation(); handleTaskDone(new CustomEvent('done', { detail: { id: task.id } })); }}
+                                        >
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                        </button>
+                                        <div class="flex items-center mb-2">
                                             <span class="text-2xl">{icon}</span>
-                                            <span class="text-xs text-emerald-300 font-semibold">+{points}</span>
                                         </div>
                                         <div class="text-sm font-semibold text-white mb-1">{task.title}</div>
                                         {#if task.summary}
                                             <div class="text-xs text-neutral-400">{task.summary}</div>
                                         {/if}
                                         <div class="text-xs text-neutral-500 mt-1">Time: {duration}m</div>
-                                        <div class="mt-2 flex items-center gap-0.5">
-                                            {#each Array(5) as _, idx}
-                                                <svg class={`w-3 h-3 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
-                                                </svg>
-                                            {/each}
+                                        <div class="mt-2 flex items-center justify-between">
+                                            <div class="flex items-center gap-0.5">
+                                                {#each Array(5) as _, idx}
+                                                    <svg class={`w-3 h-3 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                                    </svg>
+                                                {/each}
+                                            </div>
+                                            <span class="text-xs text-emerald-300 font-bold">+{points}</span>
                                         </div>
                                     </div>
                                 {/each}

@@ -7,6 +7,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import NavBar from '$lib/components/NavBar.svelte';
+	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	
 	let { children, data } = $props();
 	
@@ -64,4 +65,7 @@
 			{@render children?.()}
 		</div>
 	{/if}
+	
+	<!-- Toast notifications -->
+	<ToastContainer />
 </div>

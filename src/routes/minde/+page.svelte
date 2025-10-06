@@ -5,8 +5,9 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { getAuthContext } from '$lib/stores/auth.svelte';
-    import { getMindTasks, type Task } from '$lib/services/tasks';
+    import { getMindTasks, completeTask, type Task } from '$lib/services/tasks';
     import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
+    import { toastStore } from '$lib/stores/toast.svelte';
 
     let fillLevel = $state(0);
     let scoreMind = $state(0);
@@ -15,11 +16,13 @@
     let snapshot = $state<PerformanceSnapshot | null>(null);
     let isLoadingStats = $state(true);
 
+    // Obtener authStore una vez al inicializar el componente
+    const authStore = getAuthContext();
+
     // Datos de ejemplo mínimos para la gráfica (se pueden reemplazar por reales)
     const chartData = [0.25,0.5,0.35,0.6,0.45,0.7,0.5].map((y,i,arr)=>({ x: i/(arr.length-1), y }));
 
     onMount(async () => {
-        const authStore = getAuthContext();
         await Promise.all([
             loadMindTasks(),
             loadStats()
@@ -27,13 +30,11 @@
     });
 
     async function loadMindTasks() {
-        const authStore = getAuthContext();
         tasks = await getMindTasks(authStore);
         console.log('Tareas obtenidas:', tasks);
     }
 
     async function loadStats() {
-        const authStore = getAuthContext();
         isLoadingStats = true;
         
         try {
@@ -59,6 +60,27 @@
             isLoadingStats = false;
         }
     }
+
+    async function handleTaskDone(e: CustomEvent<{ id: string }>) {
+        const taskId = e.detail.id;
+        const task = tasks.find(t => t.id === taskId);
+        const points = task?.points ?? 30;
+        
+        console.log('Completando tarea mental:', taskId);
+        
+        const success = await completeTask(authStore, taskId, 'mind');
+        
+        if (success) {
+            console.log('Tarea completada exitosamente');
+            toastStore.success('¡Tarea completada!', points);
+            // Recargar las tareas para actualizar la lista
+            await loadMindTasks();
+            await loadStats();
+        } else {
+            console.error('Error al completar la tarea');
+            toastStore.error('Error al completar la tarea');
+        }
+    }
 </script>
 
 <!-- Vista mobile-only -->
@@ -67,7 +89,7 @@
     <div class="flex flex-col h-full">
         <!-- 1) Carrusel de tareas -->
         <div class="shrink-0 z-0">
-            <TaskCarousel title="Missio" {tasks} />
+            <TaskCarousel title="Missio" {tasks} on:done={handleTaskDone} />
         </div>
 
         <!-- 2) Cerebro responsivo al centro -->
@@ -135,14 +157,23 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {#if tasks.length === 0}
                                 {#each Array(6) as _, i}
-                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer">
-                                        <div class="flex items-center justify-between mb-2">
+                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer relative">
+                                        <button 
+                                            aria-label="Done" 
+                                            class="absolute top-2 right-2 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400/50 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-110 active:scale-95 transition-all duration-200 hover:rotate-12 z-10" 
+                                            onclick={(e) => { e.stopPropagation(); }}
+                                        >
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                        </button>
+                                        <div class="flex items-center mb-2">
                                             <span class="text-2xl">⭐</span>
-                                            <span class="text-xs text-emerald-300 font-semibold">+30</span>
                                         </div>
                                         <div class="text-sm font-semibold text-white mb-1">Mission {i + 1}</div>
                                         <div class="text-xs text-neutral-400">Complete a quick quest</div>
                                         <div class="text-xs text-neutral-500 mt-1">Time: 30m</div>
+                                        <div class="mt-auto pt-2 flex items-center justify-end">
+                                            <span class="text-xs text-emerald-300 font-bold">+30</span>
+                                        </div>
                                     </div>
                                 {/each}
                             {:else}
@@ -152,28 +183,37 @@
                                     {@const points = task.points ?? 30}
                                     {@const rating = Math.min(5, Math.max(0, task.rating ?? 0))}
                                     <div 
-                                        class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer"
+                                        class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer relative"
                                         role="button"
                                         tabindex="0"
                                         aria-label={`Abrir ${task.title}`}
                                         onclick={() => goto(`/tasks/${task.id}`)}
                                         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/tasks/${task.id}`); } }}
                                     >
-                                        <div class="flex items-center justify-between mb-2">
+                                        <button 
+                                            aria-label="Done" 
+                                            class="absolute top-2 right-2 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400/50 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-110 active:scale-95 transition-all duration-200 hover:rotate-12 z-10" 
+                                            onclick={(e) => { e.stopPropagation(); handleTaskDone(new CustomEvent('done', { detail: { id: task.id } })); }}
+                                        >
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                        </button>
+                                        <div class="flex items-center mb-2">
                                             <span class="text-2xl">{icon}</span>
-                                            <span class="text-xs text-emerald-300 font-semibold">+{points}</span>
                                         </div>
                                         <div class="text-sm font-semibold text-white mb-1">{task.title}</div>
                                         {#if task.summary}
                                             <div class="text-xs text-neutral-400">{task.summary}</div>
                                         {/if}
                                         <div class="text-xs text-neutral-500 mt-1">Time: {duration}m</div>
-                                        <div class="mt-2 flex items-center gap-0.5">
-                                            {#each Array(5) as _, idx}
-                                                <svg class={`w-3 h-3 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
-                                                </svg>
-                                            {/each}
+                                        <div class="mt-2 flex items-center justify-between">
+                                            <div class="flex items-center gap-0.5">
+                                                {#each Array(5) as _, idx}
+                                                    <svg class={`w-3 h-3 ${idx < rating ? 'text-yellow-300' : 'text-neutral-600'}`} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                                    </svg>
+                                                {/each}
+                                            </div>
+                                            <span class="text-xs text-emerald-300 font-bold">+{points}</span>
                                         </div>
                                     </div>
                                 {/each}

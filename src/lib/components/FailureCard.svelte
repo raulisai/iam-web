@@ -3,8 +3,8 @@
         id: string;
         title: string;
         date: string;
-        category: 'habit' | 'goal' | 'health' | 'productivity' | 'relationship';
-        severity: 'low' | 'medium' | 'high';
+        category: 'habit' | 'goal' | 'health' | 'productivity' | 'relationship' | 'mind' | 'body' | 'critical';
+        severity: 'low' | 'medium' | 'high' | 'critical';
         description: string;
         rootCause?: string;
         prevention?: string[];
@@ -20,13 +20,17 @@
         goal: 'border-purple-500/30 bg-purple-500/10',
         health: 'border-red-500/30 bg-red-500/10',
         productivity: 'border-amber-500/30 bg-amber-500/10',
-        relationship: 'border-pink-500/30 bg-pink-500/10'
+        relationship: 'border-pink-500/30 bg-pink-500/10',
+        mind: 'border-purple-500/30 bg-purple-500/10',
+        body: 'border-blue-500/30 bg-blue-500/10',
+        critical: 'border-red-600/30 bg-red-600/10'
     };
     
     const severityColors = {
         low: 'text-yellow-400',
         medium: 'text-orange-400',
-        high: 'text-red-400'
+        high: 'text-red-400',
+        critical: 'text-red-600'
     };
     
     const categoryIcons = {
@@ -34,7 +38,10 @@
         goal: '🎯',
         health: '❤️',
         productivity: '⚡',
-        relationship: '🤝'
+        relationship: '🤝',
+        mind: '🧠',
+        body: '💪',
+        critical: '🚨'
     };
 </script>
 

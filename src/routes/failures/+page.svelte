@@ -1,86 +1,95 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import FailureCard from '../../lib/components/FailureCard.svelte';
     import type { Failure } from '../../lib/components/FailureCard.svelte';
     import StatsCard from '../../lib/components/StatsCard.svelte';
     import AddFailureForm from './AddFailureForm.svelte';
+    import { getFailures, createFailure, type Failure as ApiFailure } from '$lib/services/failures';
+    import { getAuthStore } from '$lib/stores/auth.svelte';
     
-    const failures: Failure[] = [
-        {
-            id: 'f1',
-            title: 'Skipped workout 3 days',
-            date: '2024-01-05',
-            category: 'health',
-            severity: 'medium',
-            description: 'Perdí consistencia en mi rutina de ejercicio por falta de motivación y mal clima.',
-            rootCause: 'No tener un plan B para días de lluvia y depender solo de ejercicio al aire libre.',
-            prevention: [
-                'Tener rutina indoor preparada',
-                'Usar app de recordatorios',
-                'Preparar ropa la noche anterior'
-            ],
-            resolved: true
-        },
-        {
-            id: 'f2',
-            title: 'Project deadline missed',
-            date: '2024-01-03',
-            category: 'productivity',
-            severity: 'high',
-            description: 'No completé el proyecto a tiempo por mala estimación y procrastinación.',
-            rootCause: 'Subestimé la complejidad y no dividí el trabajo en tareas pequeñas.',
-            prevention: [
-                'Usar método Pomodoro',
-                'Breakdown de tareas en subtareas de max 2h',
-                'Buffer time del 20% en estimaciones'
-            ],
-            resolved: false
-        },
-        {
-            id: 'f3',
-            title: 'Broke diet plan',
-            date: '2024-01-04',
-            category: 'habit',
-            severity: 'low',
-            description: 'Comí comida chatarra en evento social sin planificación.',
-            rootCause: 'No preparé alternativas saludables antes del evento.',
-            prevention: [
-                'Comer algo saludable antes de eventos',
-                'Llevar snacks propios',
-                'Permitir 1 cheat meal planeado por semana'
-            ],
-            resolved: true
-        },
-        {
-            id: 'f4',
-            title: 'Argument with partner',
-            date: '2024-01-02',
-            category: 'relationship',
-            severity: 'medium',
-            description: 'Discusión por falta de comunicación sobre expectativas.',
-            rootCause: 'Asumí en lugar de preguntar y acumule frustración.',
-            prevention: [
-                'Check-in semanal de 15 min',
-                'Expresar necesidades claramente',
-                'No asumir, siempre preguntar'
-            ],
-            resolved: true
-        }
-    ];
+    const authStore = getAuthStore();
+    
+    let failures: Failure[] = [];
+    let loading = true;
+    let error = '';
+    let successMessage = '';
 
-    const totalFailures = failures.length;
-    const resolvedFailures = failures.filter(f => f.resolved).length;
-    const highSeverity = failures.filter(f => f.severity === 'high').length;
+    $: totalFailures = failures.length;
+    $: resolvedFailures = failures.filter(f => f.resolved).length;
+    $: highSeverity = failures.filter(f => f.severity === 'high').length;
+    $: criticalSeverity = failures.filter(f => f.severity === 'critical').length;
     
     // Agrupar por categoría
-    const failuresByCategory = failures.reduce((acc, f) => {
+    $: failuresByCategory = failures.reduce((acc, f) => {
         if (!acc[f.category]) acc[f.category] = [];
         acc[f.category].push(f);
         return acc;
     }, {} as Record<string, Failure[]>);
 
-    function handleFailureSubmit(event: CustomEvent) {
-        console.log('New failure submitted:', event.detail);
-        // TODO: Add to failures array or send to server
+    onMount(() => {
+        loadFailures();
+    });
+
+    async function loadFailures() {
+        loading = true;
+        error = '';
+        try {
+            const apiFailures = await getFailures(authStore);
+            
+            // Transform API failures to UI format
+            failures = apiFailures.map(f => ({
+                id: f.id,
+                title: f.title || 'Untitled Failure',
+                date: new Date(f.created_at).toISOString().split('T')[0],
+                category: f.task_table === 'tasks_mind' ? 'mind' : 'body',
+                severity: f.severity === 'minor' ? 'low' : f.severity === 'major' ? 'medium' : 'high',
+                description: f.reason,
+                rootCause: f.rootCause || '',
+                prevention: f.prevention ? f.prevention.split('\n').filter(p => p.trim()) : [],
+                resolved: false // Por ahora todos son no resueltos, se puede agregar lógica después
+            }));
+        } catch (err) {
+            error = 'Failed to load failures. Please try again.';
+            console.error('Error loading failures:', err);
+        } finally {
+            loading = false;
+        }
+    }
+
+    async function handleFailureSubmit(event: CustomEvent) {
+        const payload = event.detail;
+        
+        try {
+            error = '';
+            successMessage = '';
+            
+            const newFailure = await createFailure(authStore, payload);
+            
+            if (newFailure) {
+                successMessage = 'Failure recorded successfully! 🎯';
+                
+                // Add to local list
+                failures = [{
+                    id: newFailure.id,
+                    title: newFailure.title || 'Untitled Failure',
+                    date: new Date(newFailure.created_at).toISOString().split('T')[0],
+                    category: newFailure.task_table === 'tasks_mind' ? 'mind' : 'body',
+                    severity: newFailure.severity === 'minor' ? 'low' : newFailure.severity === 'major' ? 'medium' : 'high',
+                    description: newFailure.reason,
+                    rootCause: newFailure.rootCause || '',
+                    prevention: newFailure.prevention ? newFailure.prevention.split('\n').filter(p => p.trim()) : [],
+                    resolved: false
+                }, ...failures];
+                
+                // Clear success message after 3 seconds
+                setTimeout(() => {
+                    successMessage = '';
+                }, 3000);
+            }
+        } catch (err: any) {
+            error = err.message || 'Failed to create failure. Please try again.';
+            console.error('Error creating failure:', err);
+        }
     }
 </script>
 
@@ -92,6 +101,18 @@
             <h1 class="text-xl font-bold text-white">Failure Analysis</h1>
             <p class="text-xs text-white/60 mt-1">Learn from mistakes to prevent recurrence</p>
         </div>
+
+        <!-- Success/Error Messages -->
+        {#if successMessage}
+        <div class="mx-4 mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm animate-pulse">
+            {successMessage}
+        </div>
+        {/if}
+        {#if error}
+        <div class="mx-4 mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            {error}
+        </div>
+        {/if}
 
         <!-- Stats -->
         <div class="px-4 py-3">
@@ -110,13 +131,31 @@
                 />
                 <StatsCard 
                     title="Critical" 
-                    value={highSeverity} 
+                    value={criticalSeverity} 
                     icon="⚠️" 
                     color="red"
                 />
             </div>
         </div>
 
+        <!-- Loading State -->
+        {#if loading}
+        <div class="flex-1 flex items-center justify-center">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500 mx-auto mb-4"></div>
+                <p class="text-white/60">Loading failures...</p>
+            </div>
+        </div>
+        {:else if failures.length === 0}
+        <!-- Empty State -->
+        <div class="flex-1 flex items-center justify-center px-4">
+            <div class="text-center">
+                <div class="text-6xl mb-4">🎯</div>
+                <h3 class="text-xl font-bold text-white mb-2">No failures yet</h3>
+                <p class="text-white/60 text-sm">Record your first failure to start learning and improving</p>
+            </div>
+        </div>
+        {:else}
         <!-- Failures list -->
         <div class="flex-1 overflow-y-auto px-4 pb-4">
             <div class="space-y-4">
@@ -132,6 +171,7 @@
                 {/each}
             </div>
         </div>
+        {/if}
 
         <!-- Floating action button -->
         <AddFailureForm on:submit={handleFailureSubmit} />
@@ -139,57 +179,89 @@
 </div>
 
 <!-- Vista escritorio -->
-<div class="hidden md:block bg-neutral-950">
+<div class="hidden md:block bg-neutral-950 min-h-screen">
     <div class="max-w-6xl mx-auto p-8">
-            <!-- Header -->
-            <div class="mb-8">
-                <h1 class="text-4xl font-bold text-white">Failure Analysis</h1>
-                <p class="text-sm text-white/60 mt-2">Learn from mistakes to prevent recurrence</p>
-            </div>
-
-            <!-- Stats -->
-            <div class="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8">
-                <StatsCard 
-                    title="Total" 
-                    value={totalFailures} 
-                    icon="📊" 
-                    color="blue"
-                />
-                <StatsCard 
-                    title="Resolved" 
-                    value={resolvedFailures} 
-                    icon="✅" 
-                    color="emerald"
-                />
-                <StatsCard 
-                    title="Pending" 
-                    value={totalFailures - resolvedFailures} 
-                    icon="⏳" 
-                    color="amber"
-                />
-                <StatsCard 
-                    title="Critical" 
-                    value={highSeverity} 
-                    icon="⚠️" 
-                    color="red"
-                />
-            </div>
-
-            <!-- Failures list by category -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {#each Object.entries(failuresByCategory) as [category, categoryFailures]}
-                    <div>
-                        <h2 class="text-sm font-semibold text-white/70 uppercase mb-3">{category}</h2>
-                        <div class="space-y-3">
-                            {#each categoryFailures as failure}
-                                <FailureCard {failure} />
-                            {/each}
-                        </div>
-                    </div>
-                {/each}
-            </div>
-
-            <!-- Floating action button -->
-            <AddFailureForm on:submit={handleFailureSubmit} />
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-white">Failure Analysis</h1>
+            <p class="text-sm text-white/60 mt-2">Learn from mistakes to prevent recurrence</p>
         </div>
+
+        <!-- Success/Error Messages -->
+        {#if successMessage}
+        <div class="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 animate-pulse">
+            {successMessage}
+        </div>
+        {/if}
+        {#if error}
+        <div class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
+            {error}
+        </div>
+        {/if}
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatsCard 
+                title="Total" 
+                value={totalFailures} 
+                icon="📊" 
+                color="blue"
+            />
+            <StatsCard 
+                title="Resolved" 
+                value={resolvedFailures} 
+                icon="✅" 
+                color="emerald"
+            />
+            <StatsCard 
+                title="Pending" 
+                value={totalFailures - resolvedFailures} 
+                icon="⏳" 
+                color="amber"
+            />
+            <StatsCard 
+                title="Critical" 
+                value={criticalSeverity} 
+                icon="⚠️" 
+                color="red"
+            />
+        </div>
+
+        <!-- Loading State -->
+        {#if loading}
+        <div class="flex items-center justify-center py-20">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-red-500 mx-auto mb-4"></div>
+                <p class="text-white/60 text-lg">Loading failures...</p>
+            </div>
+        </div>
+        {:else if failures.length === 0}
+        <!-- Empty State -->
+        <div class="flex items-center justify-center py-20">
+            <div class="text-center">
+                <div class="text-8xl mb-6">🎯</div>
+                <h3 class="text-2xl font-bold text-white mb-3">No failures recorded yet</h3>
+                <p class="text-white/60 mb-6">Start tracking failures to learn and improve continuously</p>
+                <p class="text-sm text-white/50">Click the + button to record your first failure</p>
+            </div>
+        </div>
+        {:else}
+        <!-- Failures list by category -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {#each Object.entries(failuresByCategory) as [category, categoryFailures]}
+                <div>
+                    <h2 class="text-sm font-semibold text-white/70 uppercase mb-3">{category}</h2>
+                    <div class="space-y-3">
+                        {#each categoryFailures as failure}
+                            <FailureCard {failure} />
+                        {/each}
+                    </div>
+                </div>
+            {/each}
+        </div>
+        {/if}
+
+        <!-- Floating action button -->
+        <AddFailureForm on:submit={handleFailureSubmit} />
+    </div>
 </div>

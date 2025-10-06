@@ -6,18 +6,59 @@
     import { goto } from '$app/navigation';
     import { getAuthContext } from '$lib/stores/auth.svelte';
     import { getMindTasks, type Task } from '$lib/services/tasks';
+    import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
 
-    let fillLevel = 50;
+    let fillLevel = $state(0);
+    let scoreMind = $state(0);
+    let attention = $state(0);
     let tasks = $state<Task[]>([]);
+    let snapshot = $state<PerformanceSnapshot | null>(null);
+    let isLoadingStats = $state(true);
 
     // Datos de ejemplo mínimos para la gráfica (se pueden reemplazar por reales)
     const chartData = [0.25,0.5,0.35,0.6,0.45,0.7,0.5].map((y,i,arr)=>({ x: i/(arr.length-1), y }));
 
     onMount(async () => {
         const authStore = getAuthContext();
+        await Promise.all([
+            loadMindTasks(),
+            loadStats()
+        ]);
+    });
+
+    async function loadMindTasks() {
+        const authStore = getAuthContext();
         tasks = await getMindTasks(authStore);
         console.log('Tareas obtenidas:', tasks);
-    });
+    }
+
+    async function loadStats() {
+        const authStore = getAuthContext();
+        isLoadingStats = true;
+        
+        try {
+            const latestSnapshot = await getLatestSnapshot(authStore);
+            
+            if (latestSnapshot) {
+                snapshot = latestSnapshot;
+                
+                // Actualizar métricas de mind
+                scoreMind = latestSnapshot.score_mind ?? 0;
+                attention = latestSnapshot.attention ?? 0;
+                
+                // El fillLevel para el cerebro es el score_mind
+                fillLevel = scoreMind;
+                
+                console.log('Mind stats cargadas:', { scoreMind, attention, fillLevel });
+            } else {
+                console.log('No hay snapshots disponibles');
+            }
+        } catch (error) {
+            console.error('Error al cargar estadísticas:', error);
+        } finally {
+            isLoadingStats = false;
+        }
+    }
 </script>
 
 <!-- Vista mobile-only -->

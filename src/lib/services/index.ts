@@ -16,6 +16,7 @@ export * from './failures';
 export * from './profile';
 export * from './chat';
 export * from './speech';
+export * from './stats';
 
 // Legacy (backward compatibility)
 // Import from specific files instead of tasks.ts

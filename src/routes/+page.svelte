@@ -1,21 +1,59 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
+    import { onMount } from "svelte";
     import StatsCard from "../lib/components/StatsCard.svelte";
     import ProgressRing from "../lib/components/ProgressRing.svelte";
     import QuickAction from "../lib/components/QuickAction.svelte";
     import HealthBar from "../lib/components/HealthBar.svelte";
+    import { getAuthContext } from "$lib/stores/auth.svelte";
+    import { getLatestSnapshot, type PerformanceSnapshot } from "$lib/services/stats";
 
     // Dashboard data
-    let overallScore = 78;
+    let overallScore = $state(0);
     let todayTasks = 8;
     let completedTasks = 5;
     let weeklyPoints = 245;
     let weeklyGoal = 400;
 
     // Quick stats
-    let mindScore = 82;
-    let bodyScore = 75;
+    let mindScore = $state(0);
+    let bodyScore = $state(0);
     let goalsProgress = 68;
+
+    let snapshot = $state<PerformanceSnapshot | null>(null);
+    let isLoadingStats = $state(true);
+
+    onMount(async () => {
+        await loadStats();
+    });
+
+    async function loadStats() {
+        const authStore = getAuthContext();
+        isLoadingStats = true;
+        
+        try {
+            const latestSnapshot = await getLatestSnapshot(authStore);
+            
+            if (latestSnapshot) {
+                snapshot = latestSnapshot;
+                
+                // Actualizar scores
+                mindScore = Math.round(latestSnapshot.score_mind ?? 0);
+                bodyScore = Math.round(latestSnapshot.score_body ?? 0);
+                
+                // Overall score es el promedio de ambos
+                overallScore = Math.round((mindScore + bodyScore) / 2);
+                
+                console.log('Dashboard stats cargadas:', { mindScore, bodyScore, overallScore });
+            } else {
+                console.log('No hay snapshots disponibles para el dashboard');
+            }
+        } catch (error) {
+            console.error('Error al cargar estadísticas del dashboard:', error);
+        } finally {
+            isLoadingStats = false;
+        }
+    }
 
     // Recent activity
     const recentActivity = [
@@ -30,19 +68,19 @@
         { icon: "💧", title: "Hydration Goal", time: "11:00", points: "+10" },
     ];
 
-    // Quick actions handlers
-    const quickActions = [
+    // Quick actions handlers (computado reactivamente)
+    let quickActions = $derived([
         {
             icon: "🧠",
             label: "Mind",
-            sublabel: "82% health",
+            sublabel: `${mindScore}% health`,
             color: "purple" as const,
             onClick: () => goto("/minde"),
         },
         {
             icon: "💪",
             label: "Body",
-            sublabel: "75% health",
+            sublabel: `${bodyScore}% health`,
             color: "green" as const,
             onClick: () => goto("/body"),
         },
@@ -60,7 +98,7 @@
             color: "red" as const,
             onClick: () => goto("/failures"),
         },
-    ];
+    ]);
 </script>
 
 <!-- Vista mobile-only -->

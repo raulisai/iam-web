@@ -8,14 +8,24 @@
     import { goto } from '$app/navigation';
     import { getAuthContext } from '$lib/stores/auth.svelte';
     import { getBodyTasks, completeTask, type Task } from '$lib/services/tasks';
+    import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
 
     let bodyTasks = $state<Task[]>([]);
+    let snapshot = $state<PerformanceSnapshot | null>(null);
+    let isLoadingStats = $state(true);
 
-    // Stats de ejemplo
-    let energy = 35;
-    let stamina = 60;
-    let strength = 45;
-    let flexibility = 80;
+    // Stats iniciales (valores por defecto si no hay snapshot)
+    let energy = $state(0);
+    let stamina = $state(0);
+    let strength = $state(0);
+    let flexibility = $state(0);
+    let scoreBody = $state(0);
+    let attention = $state(0);
+    
+    let caloriesBurned = $state('0');
+    let stepsDailyValue = $state('0');
+    let heartRate = $state('0');
+    let sleepScore = $state('0');
     
     let dailyProgress = 65;
     let weeklyGoal = 280;
@@ -23,13 +33,51 @@
 
     onMount(async () => {
         const authStore = getAuthContext();
-        await loadBodyTasks();
+        await Promise.all([
+            loadBodyTasks(),
+            loadStats()
+        ]);
     });
 
     async function loadBodyTasks() {
         const authStore = getAuthContext();
         bodyTasks = await getBodyTasks(authStore);
         console.log('Body tasks obtenidas:', bodyTasks);
+    }
+
+    async function loadStats() {
+        const authStore = getAuthContext();
+        isLoadingStats = true;
+        
+        try {
+            const latestSnapshot = await getLatestSnapshot(authStore);
+            
+            if (latestSnapshot) {
+                snapshot = latestSnapshot;
+                
+                // Actualizar métricas de body
+                energy = latestSnapshot.energy ?? 0;
+                stamina = latestSnapshot.stamina ?? 0;
+                strength = latestSnapshot.strength ?? 0;
+                flexibility = latestSnapshot.flexibility ?? 0;
+                scoreBody = latestSnapshot.score_body ?? 0;
+                attention = latestSnapshot.attention ?? 0;
+                
+                // Actualizar stats cards
+                caloriesBurned = latestSnapshot.calories_burned ?? '0';
+                stepsDailyValue = latestSnapshot.steps_daily ?? '0';
+                heartRate = latestSnapshot.heart_rate ?? '0';
+                sleepScore = latestSnapshot.sleep_score ?? '0';
+                
+                console.log('Stats cargadas:', latestSnapshot);
+            } else {
+                console.log('No hay snapshots disponibles');
+            }
+        } catch (error) {
+            console.error('Error al cargar estadísticas:', error);
+        } finally {
+            isLoadingStats = false;
+        }
     }
 
     async function handleTaskDone(e: CustomEvent<{ id: string }>) {
@@ -63,7 +111,7 @@
             <div class="relative flex flex-col items-center">
                 <!-- Body component con altura controlada -->
                 <div class="w-full max-w-sm aspect-[3/4] mx-auto">
-                   <Body energy={energy} stamina={stamina} fillLevel={energy} />
+                   <Body energy={energy} stamina={stamina} fillLevel={scoreBody} />
                 </div>
 
                 <!-- Health bars alrededor -->
@@ -83,10 +131,10 @@
 
             <!-- Stats cards -->
             <div class="grid grid-cols-2 gap-3 pb-4">
-                <StatsCard title="Calories Burned" value="450" subtitle="Today" icon="🔥" trend="up" color="red" />
-                <StatsCard title="Steps" value="8,234" subtitle="Goal: 10,000" icon="👟" trend="neutral" color="blue" />
-                <StatsCard title="Heart Rate" value="72 bpm" subtitle="Resting" icon="❤️" trend="down" color="emerald" />
-                <StatsCard title="Sleep Score" value="85%" subtitle="Last night" icon="💤" trend="up" color="amber" />
+                <StatsCard title="Calories Burned" value={caloriesBurned} subtitle="Today" icon="🔥" trend="up" color="red" />
+                <StatsCard title="Steps" value={stepsDailyValue} subtitle="Goal: 10,000" icon="👟" trend="neutral" color="blue" />
+                <StatsCard title="Heart Rate" value="{heartRate} bpm" subtitle="Resting" icon="❤️" trend="down" color="emerald" />
+                <StatsCard title="Sleep Score" value="{sleepScore}%" subtitle="Last night" icon="💤" trend="up" color="amber" />
             </div>
         </div>
     </div>
@@ -101,7 +149,7 @@
                 <!-- Columna izquierda: Body visualization -->
                 <div class="flex flex-col gap-6">
                     <div class="w-full max-w-md mx-auto aspect-[3/4]">
-                        <Body energy={energy} stamina={stamina} fillLevel={energy} />
+                        <Body energy={energy} stamina={stamina} fillLevel={scoreBody} />
                     </div>
                     
                     <!-- Progress rings -->
@@ -123,10 +171,10 @@
                     
                     <!-- Stats cards -->
                     <div class="grid grid-cols-2 gap-4">
-                        <StatsCard title="Calories Burned" value="450" subtitle="Today" icon="🔥" trend="up" color="red" />
-                        <StatsCard title="Steps" value="8,234" subtitle="Goal: 10,000" icon="👟" trend="neutral" color="blue" />
-                        <StatsCard title="Heart Rate" value="72 bpm" subtitle="Resting" icon="❤️" trend="down" color="emerald" />
-                        <StatsCard title="Sleep Score" value="85%" subtitle="Last night" icon="💤" trend="up" color="amber" />
+                        <StatsCard title="Calories Burned" value={caloriesBurned} subtitle="Today" icon="🔥" trend="up" color="red" />
+                        <StatsCard title="Steps" value={stepsDailyValue} subtitle="Goal: 10,000" icon="👟" trend="neutral" color="blue" />
+                        <StatsCard title="Heart Rate" value="{heartRate} bpm" subtitle="Resting" icon="❤️" trend="down" color="emerald" />
+                        <StatsCard title="Sleep Score" value="{sleepScore}%" subtitle="Last night" icon="💤" trend="up" color="amber" />
                     </div>
                     
                     <!-- Body Tasks Grid -->

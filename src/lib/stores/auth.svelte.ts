@@ -1,4 +1,5 @@
 import { getContext, setContext } from 'svelte';
+import { BACKEND_URL } from '$lib/config';
 
 interface User {
 	id: string;
@@ -91,12 +92,21 @@ class AuthStore {
 			throw new Error('No hay token de autenticación');
 		}
 
+		// Determinar la URL completa
+		// Si la URL ya tiene http/https, usarla tal cual
+		// Si es relativa (empieza con /), agregar el BACKEND_URL
+		const fullUrl = url.startsWith('http') ? url : `${BACKEND_URL}${url}`;
+
 		// Combinar headers existentes con el Authorization header
 		const headers = new Headers(options.headers);
 		headers.set('Authorization', `Bearer ${token}`);
-		headers.set('Content-Type', 'application/json');
+		
+		// Solo agregar Content-Type si no está ya definido
+		if (!headers.has('Content-Type') && options.body) {
+			headers.set('Content-Type', 'application/json');
+		}
 
-		return fetch(url, {
+		return fetch(fullUrl, {
 			...options,
 			headers,
 		});

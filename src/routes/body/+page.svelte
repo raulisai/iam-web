@@ -4,16 +4,24 @@
     import HealthBar from '../../lib/components/HealthBar.svelte';
     import ProgressRing from '../../lib/components/ProgressRing.svelte';
     import Body from './Body.svelte';
+    import AddTaskButton from '../../lib/components/AddTaskButton.svelte';
+    import TaskRecommendationModal from '../../lib/components/TaskRecommendationModal.svelte';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { getAuthContext } from '$lib/stores/auth.svelte';
     import { getBodyTasks, completeTask, type Task } from '$lib/services/tasks';
     import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
+    import { getBodyRecommendations, createTaskFromRecommendation, type TaskRecommendation } from '$lib/services/recommendations';
     import { toastStore } from '$lib/stores/toast.svelte';
 
     let bodyTasks = $state<Task[]>([]);
     let snapshot = $state<PerformanceSnapshot | null>(null);
     let isLoadingStats = $state(true);
+    
+    // Recommendations state
+    let showRecommendationsModal = $state(false);
+    let recommendations = $state<TaskRecommendation[]>([]);
+    let isLoadingRecommendations = $state(false);
 
     // Stats iniciales (valores por defecto si no hay snapshot)
     let energy = $state(0);
@@ -101,6 +109,47 @@
             toastStore.error('Error al completar la tarea');
         }
     }
+    
+    async function handleAddTaskClick() {
+        showRecommendationsModal = true;
+        isLoadingRecommendations = true;
+        
+        try {
+            const response = await getBodyRecommendations(authStore, 3, false);
+            if (response && response.recommendations) {
+                recommendations = response.recommendations;
+            } else {
+                recommendations = [];
+                toastStore.error('No recommendations available');
+            }
+        } catch (error) {
+            console.error('Error loading recommendations:', error);
+            toastStore.error('Error loading recommendations');
+            recommendations = [];
+        } finally {
+            isLoadingRecommendations = false;
+        }
+    }
+    
+    async function handleRecommendationSelect(e: CustomEvent<TaskRecommendation>) {
+        const recommendation = e.detail;
+        console.log('Selected recommendation:', recommendation);
+        
+        const success = await createTaskFromRecommendation(authStore, recommendation);
+        
+        if (success) {
+            toastStore.success('Task added successfully!', recommendation.reward_xp);
+            showRecommendationsModal = false;
+            // Recargar las tareas
+            await loadBodyTasks();
+        } else {
+            toastStore.error('Error adding task');
+        }
+    }
+    
+    function handleModalClose() {
+        showRecommendationsModal = false;
+    }
 </script>
 
 <!-- Vista mobile-only -->
@@ -144,6 +193,9 @@
             </div>
         </div>
     </div>
+    
+    <!-- Add Task Button -->
+    <AddTaskButton position="bottom-right" color="orange" on:click={handleAddTaskClick} />
 </div>
 
 <!-- Vista escritorio -->
@@ -255,4 +307,17 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Add Task Button for Desktop -->
+        <AddTaskButton position="bottom-right" color="orange" on:click={handleAddTaskClick} />
 </div>
+
+<!-- Task Recommendation Modal -->
+<TaskRecommendationModal 
+    bind:isOpen={showRecommendationsModal}
+    {recommendations}
+    category="body"
+    isLoading={isLoadingRecommendations}
+    on:select={handleRecommendationSelect}
+    on:close={handleModalClose}
+/>

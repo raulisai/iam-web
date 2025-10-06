@@ -4,15 +4,20 @@ export let stamina: number = 60;
 export let fillLevel: number = 50;
 
 let image = "/img/body-status-dark.png";
+let width: number;
     
 // Aseguramos que el nivel de llenado esté entre 0 y 100
 $: clampedFillLevel = Math.max(0, Math.min(100, fillLevel));
+
+// Calculamos el ancho basado en el 30% del contenedor
+$: backgroundWidth = width ? width * 0.42 : 0;
+$: backgroundMargin = width ? (width - backgroundWidth) / 2 : 0;
 </script>
 
-<div class="body-container">
+<div class="body-container" bind:clientWidth={width}>
     <div 
         class="body-background" 
-        style="--fill-height: {100 - clampedFillLevel}%;"
+        style="--fill-height: {100 - clampedFillLevel}%; width: {backgroundWidth}px; margin-left: {backgroundMargin}px;"
     ></div>
     
     <img src={image} alt="Body Status" class="body-image" />
@@ -55,7 +60,6 @@ $: clampedFillLevel = Math.max(0, Math.min(100, fillLevel));
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
         height: 100%;
         background: linear-gradient(
             to top,

@@ -115,8 +115,8 @@
                                         role="button"
                                         tabindex="0"
                                         aria-label={`Abrir ${task.title}`}
-                                        on:click={() => goto(`/tasks/${task.id}`)}
-                                        on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/tasks/${task.id}`); } }}
+                                        onclick={() => goto(`/tasks/${task.id}`)}
+                                        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/tasks/${task.id}`); } }}
                                     >
                                         <div class="flex items-center justify-between mb-2">
                                             <span class="text-2xl">{icon}</span>

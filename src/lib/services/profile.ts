@@ -1,10 +1,9 @@
 import { apiCall } from '$lib/config';
-import type { UserProfile } from '$lib/types';
 
 /**
  * Get authenticated user's profile
  */
-export async function getUserProfile(): Promise<UserProfile> {
+export async function getUserProfile() {
 	const token = localStorage.getItem('token');
 	
 	if (!token) {
@@ -29,7 +28,7 @@ export async function getUserProfile(): Promise<UserProfile> {
 /**
  * Create user profile
  */
-export async function createUserProfile(profileData: UserProfile): Promise<UserProfile> {
+export async function createUserProfile(profileData) {
 	const token = localStorage.getItem('token');
 	
 	if (!token) {
@@ -55,7 +54,7 @@ export async function createUserProfile(profileData: UserProfile): Promise<UserP
 /**
  * Update user profile
  */
-export async function updateUserProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
+export async function updateUserProfile(profileData) {
 	const token = localStorage.getItem('token');
 	
 	if (!token) {
@@ -81,7 +80,7 @@ export async function updateUserProfile(profileData: Partial<UserProfile>): Prom
 /**
  * Delete user profile
  */
-export async function deleteUserProfile(): Promise<{ id: string; user_id: string }> {
+export async function deleteUserProfile() {
 	const token = localStorage.getItem('token');
 	
 	if (!token) {
@@ -101,4 +100,24 @@ export async function deleteUserProfile(): Promise<{ id: string; user_id: string
 	}
 
 	return await response.json();
+}
+
+/**
+ * User profile type
+ */
+export interface UserProfile {
+	id?: string;
+	user_id?: string;
+	timezone?: string;
+	birth_date?: string;
+	gender?: string;
+	weight_kg?: number;
+	height_cm?: number;
+	preferred_language?: string;
+	hours_available_to_week?: number;
+	hours_used_to_week?: number;
+	work_schedules?: string;
+	current_status?: string;
+	created_at?: string;
+	updated_at?: string;
 }

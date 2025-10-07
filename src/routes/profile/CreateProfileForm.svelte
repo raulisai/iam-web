@@ -1,6 +1,18 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { createUserProfile, type UserProfile } from '$lib/services/profile';
+	import { createUserProfile } from '$lib/services/profile';
+
+	interface UserProfile {
+		timezone: string;
+		preferred_language: string;
+		gender: string;
+		birth_date: string;
+		weight_kg?: number;
+		height_cm?: number;
+		hours_available_to_week: number;
+		work_schedules: string;
+		current_status: string;
+	}
 
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
@@ -68,42 +80,39 @@
 			<h3 class="text-lg font-semibold text-white mb-4">📋 Información Personal</h3>
 			
 			<div class="grid md:grid-cols-2 gap-4">
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Fecha de Nacimiento *</label>
-					<input
-						type="date"
-						bind:value={formData.birth_date}
-						required
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					/>
-				</div>
-
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Género *</label>
-					<select
-						bind:value={formData.gender}
-						required
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					>
-						<option value="">Seleccionar</option>
-						<option value="male">Masculino</option>
-						<option value="female">Femenino</option>
-						<option value="other">Otro</option>
-					</select>
-				</div>
-
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Idioma Preferido</label>
-					<select
-						bind:value={formData.preferred_language}
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					>
-						<option value="es">Español</option>
-						<option value="en">English</option>
-					</select>
-				</div>
-
-				<div>
+			<div>
+				<label for="create_birth_date" class="block text-white/60 text-sm mb-2">Fecha de Nacimiento *</label>
+				<input
+					id="create_birth_date"
+					type="date"
+					bind:value={formData.birth_date}
+					required
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				/>
+			</div>			<div>
+				<label for="create_gender" class="block text-white/60 text-sm mb-2">Género *</label>
+				<select
+					id="create_gender"
+					bind:value={formData.gender}
+					required
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				>
+					<option value="">Seleccionar</option>
+					<option value="male">Masculino</option>
+					<option value="female">Femenino</option>
+					<option value="other">Otro</option>
+				</select>
+			</div>			<div>
+				<label for="create_language" class="block text-white/60 text-sm mb-2">Idioma Preferido</label>
+				<select
+					id="create_language"
+					bind:value={formData.preferred_language}
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				>
+					<option value="es">Español</option>
+					<option value="en">English</option>
+				</select>
+			</div>				<div>
 					<label class="block text-white/60 text-sm mb-2">Zona Horaria</label>
 					<input
 						type="text"
@@ -120,18 +129,17 @@
 			<h3 class="text-lg font-semibold text-white mb-4">💪 Información Física (Opcional)</h3>
 			
 			<div class="grid md:grid-cols-2 gap-4">
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Peso (kg)</label>
-					<input
-						type="number"
-						step="0.1"
-						bind:value={formData.weight_kg}
-						placeholder="75.5"
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					/>
-				</div>
-
-				<div>
+			<div>
+				<label for="create_weight" class="block text-white/60 text-sm mb-2">Peso (kg)</label>
+				<input
+					id="create_weight"
+					type="number"
+					step="0.1"
+					bind:value={formData.weight_kg}
+					placeholder="75.5"
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				/>
+			</div>				<div>
 					<label class="block text-white/60 text-sm mb-2">Altura (cm)</label>
 					<input
 						type="number"
@@ -148,17 +156,16 @@
 			<h3 class="text-lg font-semibold text-white mb-4">⏰ Horarios y Disponibilidad</h3>
 			
 			<div class="grid md:grid-cols-2 gap-4">
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Horario de Trabajo</label>
-					<input
-						type="text"
-						bind:value={formData.work_schedules}
-						placeholder="9:00-17:00"
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					/>
-				</div>
-
-				<div>
+			<div>
+				<label for="create_work_schedules" class="block text-white/60 text-sm mb-2">Horario de Trabajo</label>
+				<input
+					id="create_work_schedules"
+					type="text"
+					bind:value={formData.work_schedules}
+					placeholder="9:00-17:00"
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				/>
+			</div>				<div>
 					<label class="block text-white/60 text-sm mb-2">Horas Disponibles/Semana</label>
 					<input
 						type="number"

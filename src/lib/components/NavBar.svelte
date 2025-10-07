@@ -52,7 +52,7 @@
 					</svg>
 				</div>
 				<h1 class="text-xl font-bold text-white hidden sm:block">
-					IAM Dashboard
+					IAM Djoker
 				</h1>
 			</div>
 			

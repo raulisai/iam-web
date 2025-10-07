@@ -28,7 +28,7 @@ export async function getUserProfile() {
 /**
  * Create user profile
  */
-export async function createUserProfile(profileData) {
+export async function createUserProfile(profileData: UserProfile) {
 	const token = localStorage.getItem('token');
 	
 	if (!token) {
@@ -54,7 +54,7 @@ export async function createUserProfile(profileData) {
 /**
  * Update user profile
  */
-export async function updateUserProfile(profileData) {
+export async function updateUserProfile(profileData: UserProfile) {
 	const token = localStorage.getItem('token');
 	
 	if (!token) {

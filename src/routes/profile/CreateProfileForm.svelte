@@ -78,25 +78,25 @@
 					/>
 				</div>
 
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Género *</label>
-					<select
-						bind:value={formData.gender}
-						required
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					>
-						<option value="">Seleccionar</option>
-						<option value="male">Masculino</option>
-						<option value="female">Femenino</option>
-						<option value="other">Otro</option>
-					</select>
-				</div>
-
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Idioma Preferido</label>
-					<select
-						bind:value={formData.preferred_language}
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+			<div>
+				<label for="create-gender" class="block text-white/60 text-sm mb-2">Género *</label>
+				<select
+					id="create-gender"
+					bind:value={formData.gender}
+					required
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				>
+					<option value="">Seleccionar</option>
+					<option value="male">Masculino</option>
+					<option value="female">Femenino</option>
+					<option value="other">Otro</option>
+				</select>
+			</div>			<div>
+				<label for="create-language" class="block text-white/60 text-sm mb-2">Idioma Preferido</label>
+				<select
+					id="create-language"
+					bind:value={formData.preferred_language}
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 					>
 						<option value="es">Español</option>
 						<option value="en">English</option>
@@ -104,8 +104,9 @@
 				</div>
 
 				<div>
-					<label class="block text-white/60 text-sm mb-2">Zona Horaria</label>
+					<label for="create-timezone" class="block text-white/60 text-sm mb-2">Zona Horaria</label>
 					<input
+						id="create-timezone"
 						type="text"
 						bind:value={formData.timezone}
 						placeholder="America/Mexico_City"
@@ -120,20 +121,20 @@
 			<h3 class="text-lg font-semibold text-white mb-4">💪 Información Física (Opcional)</h3>
 			
 			<div class="grid md:grid-cols-2 gap-4">
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Peso (kg)</label>
+			<div>
+				<label for="create-weight" class="block text-white/60 text-sm mb-2">Peso (kg)</label>
+				<input
+					id="create-weight"
+					type="number"
+					step="0.1"
+					bind:value={formData.weight_kg}
+					placeholder="75.5"
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				/>
+			</div>				<div>
+					<label for="create-height" class="block text-white/60 text-sm mb-2">Altura (cm)</label>
 					<input
-						type="number"
-						step="0.1"
-						bind:value={formData.weight_kg}
-						placeholder="75.5"
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					/>
-				</div>
-
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Altura (cm)</label>
-					<input
+						id="create-height"
 						type="number"
 						bind:value={formData.height_cm}
 						placeholder="175"
@@ -148,19 +149,19 @@
 			<h3 class="text-lg font-semibold text-white mb-4">⏰ Horarios y Disponibilidad</h3>
 			
 			<div class="grid md:grid-cols-2 gap-4">
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Horario de Trabajo</label>
+			<div>
+				<label for="create-work-schedule" class="block text-white/60 text-sm mb-2">Horario de Trabajo</label>
+				<input
+					id="create-work-schedule"
+					type="text"
+					bind:value={formData.work_schedules}
+					placeholder="9:00-17:00"
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				/>
+			</div>				<div>
+					<label for="create-hours-available" class="block text-white/60 text-sm mb-2">Horas Disponibles/Semana</label>
 					<input
-						type="text"
-						bind:value={formData.work_schedules}
-						placeholder="9:00-17:00"
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					/>
-				</div>
-
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Horas Disponibles/Semana</label>
-					<input
+						id="create-hours-available"
 						type="number"
 						bind:value={formData.hours_available_to_week}
 						placeholder="40"

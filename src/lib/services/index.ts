@@ -18,6 +18,8 @@ export * from './profile';
 export * from './chat';
 export * from './speech';
 export * from './stats';
+export * from './bot_rules';
+export * from './task_templates';
 
 // Legacy (backward compatibility)
 // Import from specific files instead of tasks.ts

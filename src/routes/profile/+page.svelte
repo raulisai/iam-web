@@ -4,10 +4,12 @@
 	import { getUserProfile, updateUserProfile, type UserProfile } from '$lib/services/profile';
     import { initializeAuthStore, setAuthContext } from '$lib/stores/auth.svelte';
 	import CreateProfileForm from './CreateProfileForm.svelte';
+	import EditProfileModal from '$lib/components/EditProfileModal.svelte';
 
 	let profile = $state<UserProfile | null>(null);
 	let isLoading = $state(true);
 	let isEditing = $state(false);
+	let showEditModal = $state(false);
 	let error = $state<string | null>(null);
 	let successMessage = $state<string | null>(null);
 	let profileNotFound = $state(false);
@@ -173,21 +175,27 @@
 								<p class="text-white/60 text-sm">{authStore.user?.email || ''}</p>
 								<p class="text-white/40 text-xs mt-1">Miembro desde {new Date(profile.created_at || '').toLocaleDateString('es-ES')}</p>
 							</div>
-						</div>
-						
+					</div>
+					
+					<div class="flex gap-2">
 						{#if !isEditing}
 							<button
-								onclick={startEditing}
-								class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+								onclick={() => showEditModal = true}
+								class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl transition-all hover:scale-105 flex items-center gap-2 shadow-lg shadow-purple-500/25"
 							>
 								<span>✏️</span>
 								<span>Editar</span>
 							</button>
+							<button
+								onclick={startEditing}
+								class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 border border-white/10 text-white rounded-xl transition-all hover:scale-105 flex items-center gap-2"
+							>
+								<span>⚙️</span>
+							</button>
 						{/if}
 					</div>
 				</div>
-
-				<!-- Contenido del perfil -->
+			</div>				<!-- Contenido del perfil -->
 				<div class="p-6">
 					{#if !isEditing}
 						<!-- Modo visualización -->
@@ -196,9 +204,9 @@
 							<div class="space-y-4">
 								<h3 class="text-lg font-semibold text-white mb-4">📋 Información Personal</h3>
 								
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">Fecha de Nacimiento</label>
-									<p class="text-white mt-1">
+							<div class="bg-neutral-800 rounded-lg p-4">
+							<span class="text-white/40 text-sm block">Fecha de Nacimiento</span>
+							<p class="text-white mt-1">
 										{profile.birth_date ? new Date(profile.birth_date).toLocaleDateString('es-ES') : 'No especificada'}
 										{#if profile.birth_date}
 											<span class="text-white/60 text-sm ml-2">({calculateAge(profile.birth_date)} años)</span>
@@ -206,19 +214,19 @@
 									</p>
 								</div>
 
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">Género</label>
-									<p class="text-white mt-1 capitalize">{profile.gender || 'No especificado'}</p>
+					<div class="bg-neutral-800 rounded-lg p-4">
+						<span class="text-white/40 text-sm block">Género</span>
+						<p class="text-white mt-1 capitalize">{profile.gender || 'No especificado'}</p>
 								</div>
 
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">Idioma Preferido</label>
-									<p class="text-white mt-1">{profile.preferred_language?.toUpperCase() || 'ES'}</p>
+					<div class="bg-neutral-800 rounded-lg p-4">
+						<span class="text-white/40 text-sm block">Idioma Preferido</span>
+						<p class="text-white mt-1">{profile.preferred_language?.toUpperCase() || 'ES'}</p>
 								</div>
 
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">Zona Horaria</label>
-									<p class="text-white mt-1">{profile.timezone || 'No especificada'}</p>
+					<div class="bg-neutral-800 rounded-lg p-4">
+						<span class="text-white/40 text-sm block">Zona Horaria</span>
+						<p class="text-white mt-1">{profile.timezone || 'No especificada'}</p>
 								</div>
 							</div>
 
@@ -226,19 +234,19 @@
 							<div class="space-y-4">
 								<h3 class="text-lg font-semibold text-white mb-4">💪 Información Física</h3>
 								
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">Peso</label>
-									<p class="text-white mt-1">{profile.weight_kg ? `${profile.weight_kg} kg` : 'No especificado'}</p>
+					<div class="bg-neutral-800 rounded-lg p-4">
+						<span class="text-white/40 text-sm block">Peso</span>
+						<p class="text-white mt-1">{profile.weight_kg ? `${profile.weight_kg} kg` : 'No especificado'}</p>
 								</div>
 
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">Altura</label>
-									<p class="text-white mt-1">{profile.height_cm ? `${profile.height_cm} cm` : 'No especificada'}</p>
+					<div class="bg-neutral-800 rounded-lg p-4">
+						<span class="text-white/40 text-sm block">Altura</span>
+						<p class="text-white mt-1">{profile.height_cm ? `${profile.height_cm} cm` : 'No especificada'}</p>
 								</div>
 
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">IMC (Índice de Masa Corporal)</label>
-									<p class="text-white mt-1 text-2xl font-bold">{calculateBMI(profile.weight_kg, profile.height_cm)}</p>
+					<div class="bg-neutral-800 rounded-lg p-4">
+						<span class="text-white/40 text-sm block">IMC (Índice de Masa Corporal)</span>
+						<p class="text-white mt-1 text-2xl font-bold">{calculateBMI(profile.weight_kg, profile.height_cm)}</p>
 								</div>
 							</div>
 
@@ -247,19 +255,19 @@
 								<h3 class="text-lg font-semibold text-white mb-4">⏰ Horarios y Disponibilidad</h3>
 								
 								<div class="grid md:grid-cols-3 gap-4">
-									<div class="bg-neutral-800 rounded-lg p-4">
-										<label class="text-white/40 text-sm">Horario de Trabajo</label>
-										<p class="text-white mt-1">{profile.work_schedules || 'No especificado'}</p>
+						<div class="bg-neutral-800 rounded-lg p-4">
+							<span class="text-white/40 text-sm block">Horario de Trabajo</span>
+							<p class="text-white mt-1">{profile.work_schedules || 'No especificado'}</p>
 									</div>
 
-									<div class="bg-neutral-800 rounded-lg p-4">
-										<label class="text-white/40 text-sm">Horas Disponibles/Semana</label>
-										<p class="text-white mt-1">{profile.hours_available_to_week || 0} hrs</p>
+						<div class="bg-neutral-800 rounded-lg p-4">
+							<span class="text-white/40 text-sm block">Horas Disponibles/Semana</span>
+							<p class="text-white mt-1">{profile.hours_available_to_week || 0} hrs</p>
 									</div>
 
-									<div class="bg-neutral-800 rounded-lg p-4">
-										<label class="text-white/40 text-sm">Horas Usadas/Semana</label>
-										<p class="text-white mt-1">{profile.hours_used_to_week || 0} hrs</p>
+						<div class="bg-neutral-800 rounded-lg p-4">
+							<span class="text-white/40 text-sm block">Horas Usadas/Semana</span>
+							<p class="text-white mt-1">{profile.hours_used_to_week || 0} hrs</p>
 									</div>
 								</div>
 
@@ -285,9 +293,9 @@
 							<!-- Estado Actual -->
 							<div class="md:col-span-2">
 								<h3 class="text-lg font-semibold text-white mb-4">📊 Estado Actual</h3>
-								<div class="bg-neutral-800 rounded-lg p-4">
-									<label class="text-white/40 text-sm">Estado</label>
-									<p class="text-white mt-1 capitalize">{profile.current_status || 'No especificado'}</p>
+						<div class="bg-neutral-800 rounded-lg p-4">
+							<span class="text-white/40 text-sm block">Estado</span>
+							<p class="text-white mt-1 capitalize">{profile.current_status || 'No especificado'}</p>
 								</div>
 							</div>
 						</div>
@@ -299,20 +307,22 @@
 								<h3 class="text-lg font-semibold text-white mb-4">📋 Información Personal</h3>
 								
 								<div class="grid md:grid-cols-2 gap-4">
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Fecha de Nacimiento</label>
-										<input
-											type="date"
-											bind:value={editForm.birth_date}
-											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+								<div>
+									<label for="edit-birth-date" class="block text-white/60 text-sm mb-2">Fecha de Nacimiento</label>
+									<input
+										id="edit-birth-date"
+										type="date"
+										bind:value={editForm.birth_date}
+										class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										/>
 									</div>
 
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Género</label>
-										<select
-											bind:value={editForm.gender}
-											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+								<div>
+									<label for="edit-gender" class="block text-white/60 text-sm mb-2">Género</label>
+									<select
+										id="edit-gender"
+										bind:value={editForm.gender}
+										class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										>
 											<option value="">Seleccionar</option>
 											<option value="male">Masculino</option>
@@ -321,23 +331,25 @@
 										</select>
 									</div>
 
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Idioma Preferido</label>
-										<select
-											bind:value={editForm.preferred_language}
-											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+								<div>
+									<label for="edit-language" class="block text-white/60 text-sm mb-2">Idioma Preferido</label>
+									<select
+										id="edit-language"
+										bind:value={editForm.preferred_language}
+										class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										>
 											<option value="es">Español</option>
 											<option value="en">English</option>
 										</select>
 									</div>
 
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Zona Horaria</label>
-										<input
-											type="text"
-											bind:value={editForm.timezone}
-											placeholder="America/Mexico_City"
+								<div>
+									<label for="edit-timezone" class="block text-white/60 text-sm mb-2">Zona Horaria</label>
+									<input
+										id="edit-timezone"
+										type="text"
+										bind:value={editForm.timezone}
+										placeholder="America/Mexico_City"
 											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										/>
 									</div>
@@ -349,23 +361,25 @@
 								<h3 class="text-lg font-semibold text-white mb-4">💪 Información Física</h3>
 								
 								<div class="grid md:grid-cols-2 gap-4">
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Peso (kg)</label>
-										<input
-											type="number"
-											step="0.1"
-											bind:value={editForm.weight_kg}
-											placeholder="75.5"
+								<div>
+									<label for="edit-weight" class="block text-white/60 text-sm mb-2">Peso (kg)</label>
+									<input
+										id="edit-weight"
+										type="number"
+										step="0.1"
+										bind:value={editForm.weight_kg}
+										placeholder="75.5"
 											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										/>
 									</div>
 
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Altura (cm)</label>
-										<input
-											type="number"
-											bind:value={editForm.height_cm}
-											placeholder="175"
+								<div>
+									<label for="edit-height" class="block text-white/60 text-sm mb-2">Altura (cm)</label>
+									<input
+										id="edit-height"
+										type="number"
+										bind:value={editForm.height_cm}
+										placeholder="175"
 											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										/>
 									</div>
@@ -377,22 +391,24 @@
 								<h3 class="text-lg font-semibold text-white mb-4">⏰ Horarios y Disponibilidad</h3>
 								
 								<div class="grid md:grid-cols-2 gap-4">
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Horario de Trabajo</label>
-										<input
-											type="text"
-											bind:value={editForm.work_schedules}
-											placeholder="9:00-17:00"
+								<div>
+									<label for="edit-work-schedule" class="block text-white/60 text-sm mb-2">Horario de Trabajo</label>
+									<input
+										id="edit-work-schedule"
+										type="text"
+										bind:value={editForm.work_schedules}
+										placeholder="9:00-17:00"
 											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										/>
 									</div>
 
-									<div>
-										<label class="block text-white/60 text-sm mb-2">Horas Disponibles/Semana</label>
-										<input
-											type="number"
-											bind:value={editForm.hours_available_to_week}
-											placeholder="40"
+								<div>
+									<label for="edit-hours-available" class="block text-white/60 text-sm mb-2">Horas Disponibles/Semana</label>
+									<input
+										id="edit-hours-available"
+										type="number"
+										bind:value={editForm.hours_available_to_week}
+										placeholder="40"
 											class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 										/>
 									</div>
@@ -403,11 +419,12 @@
 							<div class="space-y-4">
 								<h3 class="text-lg font-semibold text-white mb-4">📊 Estado Actual</h3>
 								
-								<div>
-									<label class="block text-white/60 text-sm mb-2">Estado</label>
-									<select
-										bind:value={editForm.current_status}
-										class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+							<div>
+								<label for="edit-status" class="block text-white/60 text-sm mb-2">Estado</label>
+								<select
+									id="edit-status"
+									bind:value={editForm.current_status}
+									class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
 									>
 										<option value="active">Activo</option>
 										<option value="busy">Ocupado</option>
@@ -440,6 +457,17 @@
 		{/if}
 	</div>
 </div>
+
+<!-- Edit Profile Modal -->
+{#if showEditModal}
+	<EditProfileModal 
+		onClose={() => showEditModal = false}
+		onSave={async () => {
+			showEditModal = false;
+			await loadProfile();
+		}}
+	/>
+{/if}
 
 <style>
 	input[type="date"]::-webkit-calendar-picker-indicator {

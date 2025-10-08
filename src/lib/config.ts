@@ -1,5 +1,5 @@
 // Configuración del backend
-export const BACKEND_URL = import.meta.env.BACKEND_API_URL || 'http://localhost:5000';
+export const BACKEND_URL = import.meta.env.BACKEND_API_URL || 'https://iam-backend-7jmc.onrender.com';
 
 // Configuración de la aplicación
 export const APP_CONFIG = {

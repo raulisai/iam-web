@@ -132,8 +132,33 @@
 			await saveOrUpdateUserProfile(profileData);
 			
 			// 2. Generate and create bot rules
-			const selectedSchedules = selectedTimes;
-			const botRules = generateBotRules(selectedActivities, selectedSchedules, selectedDays);
+			// Transform time IDs to schedule objects
+			const timeSlotMap: Record<string, { id: string; time: string }> = {
+				morning: { id: 'morning', time: '6:00-12:00' },
+				afternoon: { id: 'afternoon', time: '12:00-18:00' },
+				evening: { id: 'evening', time: '18:00-22:00' },
+				night: { id: 'night', time: '22:00-6:00' }
+			};
+			
+			const selectedSchedules = selectedTimes.map(timeId => timeSlotMap[timeId]).filter(Boolean);
+			
+			// Transform activity IDs to activity objects
+			const activityMap: Record<string, { id: string; name: string; category: 'mind' | 'body' }> = {
+				meditation: { id: 'meditation', name: 'Meditación', category: 'mind' },
+				reading: { id: 'reading', name: 'Lectura', category: 'mind' },
+				learning: { id: 'learning', name: 'Aprendizaje', category: 'mind' },
+				creativity: { id: 'creativity', name: 'Creatividad', category: 'mind' },
+				exercise: { id: 'exercise', name: 'Ejercicio', category: 'body' },
+				yoga: { id: 'yoga', name: 'Yoga', category: 'body' },
+				running: { id: 'running', name: 'Running', category: 'body' },
+				swimming: { id: 'swimming', name: 'Natación', category: 'body' },
+				cycling: { id: 'cycling', name: 'Ciclismo', category: 'body' },
+				nutrition: { id: 'nutrition', name: 'Nutrición', category: 'body' }
+			};
+			
+			const selectedActivityObjects = selectedActivities.map(actId => activityMap[actId]).filter(Boolean);
+			
+			const botRules = generateBotRules(selectedActivityObjects, selectedSchedules, selectedDays);
 			
 			for (const ruleData of botRules) {
 				await createBotRule(ruleData);

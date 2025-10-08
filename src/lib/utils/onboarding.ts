@@ -24,14 +24,34 @@ export function generateBotRules(
 ): CreateBotRuleData[] {
 	const rules: CreateBotRuleData[] = [];
 	
+	// Validate inputs
+	if (!activities || activities.length === 0) {
+		console.warn('No activities provided to generateBotRules');
+		return rules;
+	}
+	
+	if (!schedules || schedules.length === 0) {
+		console.warn('No schedules provided to generateBotRules');
+		return rules;
+	}
+	
 	for (const activity of activities) {
+		if (!activity || !activity.id) continue;
+		
 		for (const schedule of schedules) {
+			if (!schedule || !schedule.time || !schedule.id) continue;
+			
+			// Extract start time from schedule
+			const startTime = schedule.time.includes('-') 
+				? schedule.time.split('-')[0].trim()
+				: schedule.time.split(':')[0] + ':00';
+			
 			const rule: CreateBotRuleData = {
 				rule_key: `auto_${activity.id}_${schedule.id}`,
 				name: `Auto-schedule ${activity.name} - ${schedule.id}`,
 				descr: `Automatically create ${activity.name} task during ${schedule.id} (${schedule.time})`,
 				condition: {
-					time: schedule.time.split('-')[0],
+					time: startTime,
 					days: days.length > 0 ? days : ['all']
 				},
 				action: {

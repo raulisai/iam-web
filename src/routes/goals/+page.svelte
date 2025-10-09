@@ -4,8 +4,31 @@
     import type { Goal as TimelineGoal } from '../../lib/components/Timeline.svelte';
     import StatsCard from '../../lib/components/StatsCard.svelte';
     import AddGoalForm from './AddGoalForm.svelte';
-    import { fetchGoals, createGoal, type Goal as ApiGoal, type CreateGoalData } from '../../lib/services/goals';
+    import { fetchGoals, createGoal } from '../../lib/services/goals';
     import { getAuthStore } from '../../lib/stores/auth.svelte';
+
+    // Define the ApiGoal type locally
+    type ApiGoal = {
+        id: string;
+        title: string;
+        description: string;
+        type: 'short' | 'medium' | 'long';
+        start_date: string;
+        end_date?: string | null;
+        progress: number;
+    };
+
+    // Define the CreateGoalData type locally
+    type CreateGoalData = {
+        title: string;
+        description: string;
+        type: 'short' | 'medium' | 'long';
+        start_date: string;
+        end_date?: string;
+        progress?: number;
+        metric_key: string;  // Added required property
+        target_value: number;  // Added required property
+    };
 
     const authStore = getAuthStore();
     
@@ -59,14 +82,49 @@
         }
     }
 
-    async function handleGoalSubmit(event: CustomEvent<CreateGoalData>) {
+    async function handleGoalSubmit(event: CustomEvent<any>) {
         try {
+            // If the event just contains reload flag, reload the goals
+            if (event.detail?.reload) {
+                await loadGoals();
+                return;
+            }
+
             const token = authStore.getToken();
             if (!token) {
                 throw new Error('No authentication token found');
             }
 
-            const newGoal = await createGoal(token, event.detail);
+            const { tasks: goalTasks, ...goalData } = event.detail;
+
+            // Add missing required properties if not provided in the event
+            const completeGoalData = {
+                ...goalData,
+                metric_key: goalData.metric_key || 'completion',  // Default value
+                target_value: goalData.target_value || 100,  // Default value
+                // Convert progress to string if it exists
+                progress: goalData.progress !== undefined ? String(goalData.progress) : undefined
+            };
+
+            // Create the goal first
+            const newGoal = await createGoal(token, completeGoalData);
+            
+            // Then create tasks if any
+            if (goalTasks && goalTasks.length > 0) {
+                try {
+                    // Import createGoalTask dynamically
+                    const { createGoalTask } = await import('../../lib/services/goalTasks');
+                    
+                    // Create all tasks in parallel
+                    await Promise.all(
+                        goalTasks.map((task: any) => createGoalTask(token, newGoal.id, task))
+                    );
+                } catch (taskErr) {
+                    console.error('Error creating tasks:', taskErr);
+                    // Don't fail the whole operation if tasks fail
+                    error = 'Goal created but some tasks failed to save';
+                }
+            }
             
             // Add new goal to the list
             goals = [...goals, mapApiGoalToTimeline(newGoal)];

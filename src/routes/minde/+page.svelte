@@ -9,7 +9,7 @@
     import { getAuthContext } from '$lib/stores/auth.svelte';
     import { getMindTasks, completeTask, type Task } from '$lib/services/tasks';
     import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
-    import { getMindRecommendations, createTaskFromRecommendation, type TaskRecommendation } from '$lib/services/recommendations';
+    import { getMindRecommendations, createTaskFromRecommendation, createCustomTask, type TaskRecommendation } from '$lib/services/recommendations';
     import { toastStore } from '$lib/stores/toast.svelte';
 
     let fillLevel = $state(0);
@@ -101,9 +101,11 @@
         isLoadingRecommendations = true;
         
         try {
-            const response = await getMindRecommendations(authStore, 3, false);
+            // Usar IA para recomendaciones más inteligentes
+            const response = await getMindRecommendations(authStore, 3, true);
             if (response && response.recommendations) {
                 recommendations = response.recommendations;
+                console.log(`Using ${response.method} recommendations`);
             } else {
                 recommendations = [];
                 toastStore.error('No recommendations available');
@@ -133,6 +135,27 @@
         }
     }
     
+    async function handleCustomTaskCreate(e: CustomEvent<{
+        name: string;
+        desc: string;
+        reward_xp: number;
+        estimated_minutes: number;
+    }>) {
+        const taskData = e.detail;
+        console.log('Creating custom task:', taskData);
+        
+        const success = await createCustomTask(authStore, 'mind', taskData);
+        
+        if (success) {
+            toastStore.success('Custom task created!', taskData.reward_xp);
+            showRecommendationsModal = false;
+            // Recargar las tareas
+            await loadMindTasks();
+        } else {
+            toastStore.error('Error creating custom task');
+        }
+    }
+    
     function handleModalClose() {
         showRecommendationsModal = false;
     }
@@ -144,7 +167,14 @@
     <div class="flex flex-col h-full">
         <!-- 1) Carrusel de tareas -->
         <div class="shrink-0 z-0">
-            <TaskCarousel title="Missio" {tasks} on:done={handleTaskDone} />
+            <TaskCarousel 
+                title="Missio" 
+                {tasks}
+                isLoading={isLoadingTasks}
+                category="mind"
+                on:done={handleTaskDone}
+                on:addTask={handleAddTaskClick}
+            />
         </div>
 
         <!-- 2) Cerebro responsivo al centro -->
@@ -305,5 +335,6 @@
     category="mind"
     isLoading={isLoadingRecommendations}
     on:select={handleRecommendationSelect}
+    on:createCustom={handleCustomTaskCreate}
     on:close={handleModalClose}
 />

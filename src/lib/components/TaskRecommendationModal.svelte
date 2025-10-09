@@ -16,11 +16,24 @@
     const dispatch = createEventDispatcher<{
         select: TaskRecommendation;
         close: void;
+        createCustom: {
+            name: string;
+            desc: string;
+            reward_xp: number;
+            estimated_minutes: number;
+        };
     }>();
     
     let selectedCard = $state<string | null>(null);
     let editingCard = $state<string | null>(null);
     let editedData = $state<Record<string, any>>({});
+    
+    // Custom task form
+    let showCustomForm = $state(true);
+    let customTaskName = $state('');
+    let customTaskDesc = $state('');
+    let customTaskXP = $state(30);
+    let customTaskMinutes = $state(30);
     
     function handleSelectCard(recommendation: TaskRecommendation) {
         if (selectedCard === recommendation.id) {
@@ -84,6 +97,23 @@
         if (cat === 'body') return 'border-orange-400/50';
         return 'border-emerald-400/50';
     }
+    
+    function handleCreateCustomTask() {
+        if (!customTaskName.trim()) return;
+        
+        dispatch('createCustom', {
+            name: customTaskName,
+            desc: customTaskDesc,
+            reward_xp: customTaskXP,
+            estimated_minutes: customTaskMinutes
+        });
+        
+        // Reset form
+        customTaskName = '';
+        customTaskDesc = '';
+        customTaskXP = 30;
+        customTaskMinutes = 30;
+    }
 </script>
 
 {#if isOpen}
@@ -127,6 +157,122 @@
             
             <!-- Content -->
             <div class="bg-neutral-900 rounded-b-2xl p-6">
+                <!-- Custom Task Form -->
+                {#if showCustomForm}
+                    <div class="mb-8 p-6 rounded-xl border-2 border-dashed {getCategoryBorder(category)} bg-gradient-to-br from-neutral-800/50 to-neutral-900/50">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                                <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5v14M5 12h14"/>
+                                </svg>
+                                Create Custom Task
+                            </h3>
+                            <button
+                                onclick={() => showCustomForm = false}
+                                class="text-neutral-400 hover:text-white transition-colors"
+                                aria-label="Hide custom form"
+                            >
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 12h14"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <!-- Task Name -->
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                    Task Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    bind:value={customTaskName}
+                                    placeholder="e.g., Morning Meditation, 30-min Run"
+                                    class="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                />
+                            </div>
+                            
+                            <!-- Task Description -->
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                    Description
+                                </label>
+                                <textarea
+                                    bind:value={customTaskDesc}
+                                    rows="2"
+                                    placeholder="Describe your task..."
+                                    class="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                                ></textarea>
+                            </div>
+                            
+                            <!-- XP and Duration -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                        Reward XP
+                                    </label>
+                                    <input
+                                        type="number"
+                                        bind:value={customTaskXP}
+                                        min="10"
+                                        max="100"
+                                        step="10"
+                                        class="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                        Duration (minutes)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        bind:value={customTaskMinutes}
+                                        min="5"
+                                        max="180"
+                                        step="5"
+                                        class="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <!-- Create Button -->
+                            <button
+                                onclick={handleCreateCustomTask}
+                                disabled={!customTaskName.trim()}
+                                class="w-full py-3 rounded-lg bg-gradient-to-r {getCategoryColor(category)} text-white font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            >
+                                <span class="flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12h14"/>
+                                    </svg>
+                                    Create Custom Task
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                {:else}
+                    <button
+                        onclick={() => showCustomForm = true}
+                        class="w-full mb-6 py-3 rounded-lg border-2 border-dashed {getCategoryBorder(category)} bg-neutral-800/50 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        <span class="font-medium">Create Custom Task</span>
+                    </button>
+                {/if}
+                
+                <!-- AI Recommendations Section -->
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        AI-Powered Recommendations
+                    </h3>
+                    <p class="text-sm text-neutral-400 mt-1">Personalized suggestions based on your activity</p>
+                </div>
+                
                 {#if isLoading}
                     <div class="flex items-center justify-center py-20">
                         <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500"></div>

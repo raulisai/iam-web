@@ -150,3 +150,52 @@ export async function createTaskFromRecommendation(
         return false;
     }
 }
+
+/**
+ * Crea una tarea personalizada
+ */
+export async function createCustomTask(
+    authStore: AuthStore,
+    category: 'mind' | 'body',
+    taskData: {
+        name: string;
+        desc: string;
+        reward_xp: number;
+        estimated_minutes: number;
+    }
+): Promise<boolean> {
+    try {
+        const endpoint = category === 'mind' 
+            ? '/api/tasks/mind' 
+            : '/api/tasks/body';
+
+        const payload = {
+            title: taskData.name,
+            summary: taskData.desc,
+            points: taskData.reward_xp,
+            durationMinutes: taskData.estimated_minutes,
+            scheduled_at: new Date().toISOString(),
+            created_by: 'user',
+            status: 'pending',
+            custom: true
+        };
+
+        const response = await authStore.authenticatedFetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            console.error('Error creating custom task:', response.statusText);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error creating custom task:', error);
+        return false;
+    }
+}

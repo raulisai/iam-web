@@ -11,7 +11,7 @@
     import { getAuthContext } from '$lib/stores/auth.svelte';
     import { getBodyTasks, completeTask, type Task } from '$lib/services/tasks';
     import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
-    import { getBodyRecommendations, createTaskFromRecommendation, type TaskRecommendation } from '$lib/services/recommendations';
+    import { getBodyRecommendations, createTaskFromRecommendation, createCustomTask, type TaskRecommendation } from '$lib/services/recommendations';
     import { toastStore } from '$lib/stores/toast.svelte';
 
     let bodyTasks = $state<Task[]>([]);
@@ -121,9 +121,11 @@
         isLoadingRecommendations = true;
         
         try {
-            const response = await getBodyRecommendations(authStore, 3, false);
+            // Usar IA para recomendaciones más inteligentes
+            const response = await getBodyRecommendations(authStore, 3, true);
             if (response && response.recommendations) {
                 recommendations = response.recommendations;
+                console.log(`Using ${response.method} recommendations`);
             } else {
                 recommendations = [];
                 toastStore.error('No recommendations available');
@@ -153,6 +155,27 @@
         }
     }
     
+    async function handleCustomTaskCreate(e: CustomEvent<{
+        name: string;
+        desc: string;
+        reward_xp: number;
+        estimated_minutes: number;
+    }>) {
+        const taskData = e.detail;
+        console.log('Creating custom task:', taskData);
+        
+        const success = await createCustomTask(authStore, 'body', taskData);
+        
+        if (success) {
+            toastStore.success('Custom task created!', taskData.reward_xp);
+            showRecommendationsModal = false;
+            // Recargar las tareas
+            await loadBodyTasks();
+        } else {
+            toastStore.error('Error creating custom task');
+        }
+    }
+    
     function handleModalClose() {
         showRecommendationsModal = false;
     }
@@ -163,7 +186,14 @@
     <div class="flex flex-col h-full">
         <!-- 1) Carrusel de tareas físicas -->
         <div class="shrink-0">
-            <TaskCarousel title="Physical Tasks" tasks={bodyTasks} on:done={handleTaskDone} />
+            <TaskCarousel 
+                title="Physical Tasks" 
+                tasks={bodyTasks} 
+                isLoading={isLoadingTasks}
+                category="body"
+                on:done={handleTaskDone}
+                on:addTask={handleAddTaskClick}
+            />
         </div>
 
         <!-- 2) Imagen del cuerpo y stats principales -->
@@ -337,5 +367,6 @@
     category="body"
     isLoading={isLoadingRecommendations}
     on:select={handleRecommendationSelect}
+    on:createCustom={handleCustomTaskCreate}
     on:close={handleModalClose}
 />

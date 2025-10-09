@@ -116,7 +116,7 @@
         {#if error}
         <div class="mx-4 mt-3 p-3 bg-red-500/20 border border-red-500/50 rounded-md text-red-200 text-sm">
             {error}
-            <button on:click={() => error = ''} class="float-right text-red-200 hover:text-white">✕</button>
+            <button onclick={() => error = ''} class="float-right text-red-200 hover:text-white">✕</button>
         </div>
         {/if}
 
@@ -181,7 +181,7 @@
             {#if error}
             <div class="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-md text-red-200">
                 {error}
-                <button on:click={() => error = ''} class="float-right text-red-200 hover:text-white">✕</button>
+                <button onclick={() => error = ''} class="float-right text-red-200 hover:text-white">✕</button>
             </div>
             {/if}
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { createUserProfile, type UserProfile } from '$lib/services/profile';
+	import { createUserProfile } from '$lib/services/profile';
+	import type { UserProfile } from '$lib/types';
 
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
@@ -67,18 +68,17 @@
 		<div class="space-y-4">
 			<h3 class="text-lg font-semibold text-white mb-4">📋 Información Personal</h3>
 			
-			<div class="grid md:grid-cols-2 gap-4">
-				<div>
-					<label class="block text-white/60 text-sm mb-2">Fecha de Nacimiento *</label>
-					<input
-						type="date"
-						bind:value={formData.birth_date}
-						required
-						class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-					/>
-				</div>
-
+		<div class="grid md:grid-cols-2 gap-4">
 			<div>
+				<label for="birth-date" class="block text-white/60 text-sm mb-2">Fecha de Nacimiento *</label>
+				<input
+					id="birth-date"
+					type="date"
+					bind:value={formData.birth_date}
+					required
+					class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+				/>
+			</div>			<div>
 				<label for="create-gender" class="block text-white/60 text-sm mb-2">Género *</label>
 				<select
 					id="create-gender"

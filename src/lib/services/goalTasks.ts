@@ -38,6 +38,16 @@ export interface TaskRecommendationResponse {
 	};
 }
 
+export interface TaskOccurrence {
+	id?: string;
+	task_id: string;
+	goal_id: string;
+	user_id?: string;
+	completed_at: string;
+	notes?: string;
+	value?: number;
+}
+
 /**
  * Get AI-powered task recommendations for a goal
  */
@@ -163,4 +173,112 @@ export async function fetchGoalTasks(token: string, goalId: string): Promise<Goa
 	}
 
 	return response.json();
+}
+
+/**
+ * Update an existing task
+ */
+export async function updateGoalTask(
+	token: string,
+	goalId: string,
+	taskId: string,
+	taskData: Partial<GoalTask>
+): Promise<GoalTask> {
+	const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}/tasks/${taskId}`, {
+		method: 'PUT',
+		headers: {
+			Authorization: `Bearer ${token}`,
+			'Content-Type': 'application/json',
+			Accept: 'application/json'
+		},
+		body: JSON.stringify(taskData)
+	});
+
+	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
+		const error = await response.json();
+		throw new Error(error.error || `Failed to update task: ${response.statusText}`);
+	}
+
+	return response.json();
+}
+
+/**
+ * Create occurrence (mark task as completed)
+ */
+export async function createTaskOccurrence(
+	token: string,
+	goalId: string,
+	taskId: string,
+	notes?: string,
+	value?: number
+): Promise<TaskOccurrence> {
+	const response = await fetch(
+		`${BACKEND_URL}/api/goals/tasks/${taskId}/occurrences`,
+		{
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${token}`,
+				'Content-Type': 'application/json',
+				Accept: 'application/json'
+			},
+			body: JSON.stringify({
+				scheduled_at: new Date().toISOString(),
+				notes: notes || '',
+				value: value || 1
+			})
+		}
+	);
+
+	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
+		if (response.status === 404) {
+			throw new Error('Occurrences endpoint not found (404)');
+		}
+		
+		// Try to parse error as JSON, handle non-JSON responses
+		const contentType = response.headers.get('content-type');
+		if (contentType && contentType.includes('application/json')) {
+			const error = await response.json();
+			throw new Error(error.error || `Failed to create occurrence: ${response.statusText}`);
+		} else {
+			throw new Error(`Failed to create occurrence: ${response.status} ${response.statusText}`);
+		}
+	}
+
+	return response.json();
+}
+
+/**
+ * Delete a task
+ */
+export async function deleteGoalTask(token: string, goalId: string, taskId: string): Promise<void> {
+	const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}/tasks/${taskId}`, {
+		method: 'DELETE',
+		headers: {
+			Authorization: `Bearer ${token}`,
+			Accept: 'application/json'
+		}
+	});
+
+	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
+		const error = await response.json();
+		throw new Error(error.error || `Failed to delete task: ${response.statusText}`);
+	}
 }

@@ -3,17 +3,12 @@
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
     import { getAuthStore } from '../../../lib/stores/auth.svelte';
-    import { fetchGoals, updateGoal, deleteGoal, type Goal } from '../../../lib/services/goals';
+    import { initializeGoalsStore } from '../../../lib/stores/goals.svelte';
+    import { initializeTasksStore } from '../../../lib/stores/tasks.svelte';
     import { 
-        fetchGoalTasks, 
-        createGoalTask, 
-        updateGoalTask,
-        deleteGoalTask,
-        createTaskOccurrence,
-        fetchCompletedTaskIds,
         fetchTaskRecommendations,
-        type GoalTask,
-        type TaskRecommendation 
+        type TaskRecommendation,
+        type GoalTask
     } from '../../../lib/services/goalTasks';
     
     // Components
@@ -23,16 +18,20 @@
     import RecommendationCard from '../../../lib/components/goals/RecommendationCard.svelte';
     
     const authStore = getAuthStore();
+    const goalsStore = initializeGoalsStore();
+    const tasksStore = initializeTasksStore();
     let goalId = $derived($page.params.id || '');
 
-    let goal: any = $state(null);
-    let tasks: GoalTask[] = $state([]);
-    let recommendations: TaskRecommendation[] = $state([]);
-    let completedTaskIds: Set<string> = $state(new Set());
+    // Estado reactivo usando stores
+    let goal = $derived(goalsStore.getById(goalId));
+    let tasks = $derived(tasksStore.getForGoal(goalId));
+    let completedTaskIds = $derived(tasksStore.completedTaskIds);
     let isLoading = $state(true);
+    let isLoadingTasks = $derived(tasksStore.isLoading);
     let isLoadingRecommendations = $state(false);
     let error = $state('');
     let successMessage = $state('');
+    let recommendations: TaskRecommendation[] = $state([]);
     let showDeleteConfirm = $state(false);
     let showAddTaskForm = $state(false);
     let showEditTaskForm = $state(false);
@@ -58,21 +57,20 @@
         error = '';
         
         try {
-            const token = authStore.getToken();
-            if (!token) {
-                throw new Error('No authentication token found');
+            // Cargar goals si no están en store
+            if (goalsStore.goals.length === 0) {
+                await goalsStore.fetchAll();
             }
 
-            const goals = await fetchGoals(token);
-            goal = goals.find(g => g.id === goalId) || null;
-
+            // Verificar que el goal existe
             if (!goal) {
                 error = 'Goal not found';
+                isLoading = false;
                 return;
             }
 
-            // Load tasks
-            await loadTasks();
+            // Load tasks usando store
+            await tasksStore.fetchForGoal(goalId);
 
         } catch (err) {
             error = err instanceof Error ? err.message : 'Failed to load goal';
@@ -82,47 +80,7 @@
         }
     }
 
-    async function loadTasks() {
-        try {
-            const token = authStore.getToken();
-            if (!token) {
-                console.error('No token available');
-                return;
-            }
 
-            // Usar try-catch independiente para cargar tareas
-            try {
-                tasks = await fetchGoalTasks(token, goalId);
-            } catch (err) {
-                console.error('Error loading tasks:', err);
-                tasks = []; // Asegurarse de que tasks sea un array vacío si falla
-            }
-            
-            // Cargar occurrences y marcar tareas completadas
-            if (tasks.length > 0) {
-                try {
-                    const completedIds = await fetchCompletedTaskIds(token, tasks);
-                    completedTaskIds = completedIds;
-                    
-                    // Actualizar goal si todas las tareas están completadas
-                    if (completedIds.size === tasks.length && tasks.length > 0) {
-                        try {
-                            // Actualizar el goal al 100% de progreso si todas las tareas están completadas
-                            await updateGoal(token, goalId, { progress: 100 });
-                            if (goal) goal.progress = 100;
-                        } catch (updateErr) {
-                            console.log('No se pudo actualizar el progreso del goal:', updateErr);
-                        }
-                    }
-                } catch (err) {
-                    console.log('Could not load occurrences:', err);
-                    // Continue without occurrences
-                }
-            }
-        } catch (err) {
-            console.error('Error in loadTasks:', err);
-        }
-    }
 
     async function loadRecommendations() {
         if (!goal) return;
@@ -131,7 +89,10 @@
         
         try {
             const token = authStore.getToken();
-            if (!token) return;
+            if (!token) {
+                showMessage('No hay token de autenticación', 'error');
+                return;
+            }
 
             const result = await fetchTaskRecommendations(token, goalId, 5, true);
             recommendations = result.recommendations;
@@ -147,12 +108,12 @@
 
     async function handleGoalUpdate(event: CustomEvent) {
         try {
-            const token = authStore.getToken();
-            if (!token) return;
-
-            const updatedGoal = await updateGoal(token, goalId, event.detail);
-            goal = updatedGoal;
-            showMessage('✅ Goal actualizado', 'success');
+            const success = await goalsStore.update(goalId, event.detail);
+            if (success) {
+                showMessage('✅ Goal actualizado', 'success');
+            } else {
+                showMessage('Error al actualizar el goal', 'error');
+            }
         } catch (err) {
             showMessage('Error al actualizar el goal', 'error');
         }
@@ -165,30 +126,30 @@
         }
 
         try {
-            const token = authStore.getToken();
-            if (!token) return;
-
-            const taskData: any = {
+            const taskData: GoalTask = {
                 title: newTaskTitle.trim(),
-                ...(newTaskDescription.trim() && { description: newTaskDescription.trim() }),
+                description: newTaskDescription.trim(),
                 type: newTaskType,
                 required: newTaskRequired,
                 weight: newTaskWeight,
                 priority: 'medium' as 'low' | 'medium' | 'high'
             };
 
-            await createGoalTask(token, goalId, taskData);
-            await loadTasks();
+            const newTask = await tasksStore.create(goalId, taskData);
             
-            // Reset form
-            newTaskTitle = '';
-            newTaskDescription = '';
-            newTaskType = 'habit';
-            newTaskRequired = true;
-            newTaskWeight = 1;
-            showAddTaskForm = false;
-            
-            showMessage('✅ Tarea creada', 'success');
+            if (newTask) {
+                // Reset form
+                newTaskTitle = '';
+                newTaskDescription = '';
+                newTaskType = 'habit';
+                newTaskRequired = true;
+                newTaskWeight = 1;
+                showAddTaskForm = false;
+                
+                showMessage('✅ Tarea creada', 'success');
+            } else {
+                showMessage('Error al crear la tarea', 'error');
+            }
         } catch (err) {
             showMessage('Error al crear la tarea', 'error');
         }
@@ -198,38 +159,18 @@
         const taskId = event.detail;
         
         try {
-            const token = authStore.getToken();
-            if (!token) return;
-
-            // Marcar como completada inmediatamente para respuesta UI instantánea
-            completedTaskIds.add(taskId);
-            completedTaskIds = new Set(completedTaskIds); // Trigger reactivity
+            const success = await tasksStore.complete(goalId, taskId);
             
-            // Si todas las tareas están completadas, actualizar el progreso al 100%
-            if (completedTaskIds.size === tasks.length && tasks.length > 0) {
-                if (goal) goal.progress = 100;
-            }
-
-            // Try to create occurrence and log completion
-            try {
-                await createTaskOccurrence(token, goalId, taskId);
-                console.log('Occurrence created successfully');
-                
-                // Si todas las tareas están completadas, actualizar el goal en el backend
+            if (success) {
+                // Si todas las tareas están completadas, actualizar el goal
                 if (completedTaskIds.size === tasks.length && tasks.length > 0) {
-                    try {
-                        await updateGoal(token, goalId, { progress: 100 });
-                    } catch (updateErr) {
-                        console.log('No se pudo actualizar el progreso del goal');
-                    }
+                    await goalsStore.update(goalId, { progress: 100 });
                 }
-            } catch (occurrenceErr: any) {
-                // Handle any backend errors gracefully - use local state
-                console.log('Using local completion tracking, server error:', 
-                    occurrenceErr instanceof Error ? occurrenceErr.message : 'Unknown error');
+                
+                showMessage('✅ Tarea completada! +10 XP', 'success');
+            } else {
+                showMessage('Error al completar la tarea', 'error');
             }
-            
-            showMessage('\u2705 Tarea completada! +10 XP', 'success');
         } catch (err) {
             console.error('Error completing task:', err);
             showMessage('Error al completar la tarea', 'error');
@@ -255,12 +196,12 @@
         const taskId = event.detail;
         
         try {
-            const token = authStore.getToken();
-            if (!token) return;
-
-            await deleteGoalTask(token, goalId, taskId);
-            await loadTasks();
-            showMessage('🗑️ Tarea eliminada', 'success');
+            const success = await tasksStore.remove(goalId, taskId);
+            if (success) {
+                showMessage('🗑️ Tarea eliminada', 'success');
+            } else {
+                showMessage('Error al eliminar la tarea', 'error');
+            }
         } catch (err) {
             showMessage('Error al eliminar la tarea', 'error');
         }
@@ -270,31 +211,31 @@
         if (!newTaskTitle.trim() || !editingTask?.id) return;
 
         try {
-            const token = authStore.getToken();
-            if (!token) return;
-
-            const taskData: any = {
+            const taskData: Partial<GoalTask> = {
                 title: newTaskTitle.trim(),
-                ...(newTaskDescription.trim() && { description: newTaskDescription.trim() }),
+                description: newTaskDescription.trim(),
                 type: newTaskType,
                 required: newTaskRequired,
                 weight: newTaskWeight,
                 priority: 'medium' as 'low' | 'medium' | 'high'
             };
 
-            await updateGoalTask(token, goalId, editingTask.id, taskData);
-            await loadTasks();
+            const success = await tasksStore.update(goalId, editingTask.id, taskData);
             
-            // Reset form
-            newTaskTitle = '';
-            newTaskDescription = '';
-            newTaskType = 'habit';
-            newTaskRequired = true;
-            newTaskWeight = 1;
-            editingTask = null;
-            showEditTaskForm = false;
-            
-            showMessage('✅ Tarea actualizada', 'success');
+            if (success) {
+                // Reset form
+                newTaskTitle = '';
+                newTaskDescription = '';
+                newTaskType = 'habit';
+                newTaskRequired = true;
+                newTaskWeight = 1;
+                editingTask = null;
+                showEditTaskForm = false;
+                
+                showMessage('✅ Tarea actualizada', 'success');
+            } else {
+                showMessage('Error al actualizar la tarea', 'error');
+            }
         } catch (err) {
             showMessage('Error al actualizar la tarea', 'error');
         }
@@ -304,25 +245,24 @@
         const recommendation: TaskRecommendation = event.detail;
         
         try {
-            const token = authStore.getToken();
-            if (!token) return;
-
-            const taskData = {
+            const taskData: GoalTask = {
                 title: recommendation.title,
-                description: recommendation.description,
+                description: recommendation.description || '',
                 type: 'habit' as const,
                 required: recommendation.priority === 'high',
                 weight: recommendation.priority === 'high' ? 2 : recommendation.priority === 'medium' ? 1.5 : 1,
                 priority: recommendation.priority
             };
 
-            await createGoalTask(token, goalId, taskData);
-            await loadTasks();
+            const newTask = await tasksStore.create(goalId, taskData);
             
-            // Remove from recommendations
-            recommendations = recommendations.filter(r => r !== recommendation);
-            
-            showMessage('✅ Tarea agregada desde recomendación', 'success');
+            if (newTask) {
+                // Remove from recommendations
+                recommendations = recommendations.filter(r => r !== recommendation);
+                showMessage('✅ Tarea agregada desde recomendación', 'success');
+            } else {
+                showMessage('Error al agregar la tarea', 'error');
+            }
         } catch (err) {
             showMessage('Error al agregar la tarea', 'error');
         }
@@ -330,11 +270,13 @@
 
     async function handleDeleteGoal() {
         try {
-            const token = authStore.getToken();
-            if (!token) return;
-
-            await deleteGoal(token, goalId);
-            goto('/goals');
+            const success = await goalsStore.remove(goalId);
+            if (success) {
+                goto('/goals');
+            } else {
+                showMessage('Error al eliminar el goal', 'error');
+                showDeleteConfirm = false;
+            }
         } catch (err) {
             showMessage('Error al eliminar el goal', 'error');
             showDeleteConfirm = false;

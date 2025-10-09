@@ -4,82 +4,45 @@
     import type { Goal as TimelineGoal } from '../../lib/components/Timeline.svelte';
     import StatsCard from '../../lib/components/StatsCard.svelte';
     import AddGoalForm from './AddGoalForm.svelte';
-    import { fetchGoals, createGoal } from '../../lib/services/goals';
-    import { getAuthStore } from '../../lib/stores/auth.svelte';
+    import { initializeGoalsStore } from '../../lib/stores/goals.svelte';
+    import type { Goal } from '../../lib/services/goals';
 
-    // Define the ApiGoal type locally
-    type ApiGoal = {
-        id: string;
-        title: string;
-        description: string;
-        type: 'short' | 'medium' | 'long';
-        start_date: string;
-        end_date?: string | null;
-        progress: number;
-    };
-
-    // Define the CreateGoalData type locally
-    type CreateGoalData = {
-        title: string;
-        description: string;
-        type: 'short' | 'medium' | 'long';
-        start_date: string;
-        end_date?: string;
-        progress?: number;
-        metric_key: string;  // Added required property
-        target_value: number;  // Added required property
-    };
-
-    const authStore = getAuthStore();
+    const goalsStore = initializeGoalsStore();
     
-    let goals: TimelineGoal[] = [];
-    let isLoading = true;
-    let error = '';
+    // Computed values from store
+    let goals = $derived(goalsStore.goals.map(mapApiGoalToTimeline));
+    let isLoading = $derived(goalsStore.isLoading);
+    let error = $derived(goalsStore.error || '');
 
     // Función para convertir goals de API a formato Timeline
-    function mapApiGoalToTimeline(apiGoal: ApiGoal): TimelineGoal {
+    function mapApiGoalToTimeline(apiGoal: Goal): TimelineGoal {
         // Calcular puntos basados en el tipo de goal
         const pointsMap = { short: 50, medium: 200, long: 500 };
         const points = pointsMap[apiGoal.type] || 100;
 
         // Determinar status basado en progreso
         let status: 'pending' | 'in-progress' | 'completed' = 'pending';
-        if (apiGoal.progress >= 100) {
+        if ((apiGoal.progress || 0) >= 100) {
             status = 'completed';
-        } else if (apiGoal.progress > 0) {
+        } else if ((apiGoal.progress || 0) > 0) {
             status = 'in-progress';
         }
 
         return {
-            id: apiGoal.id,
+            id: apiGoal.id || '',
             title: apiGoal.title,
-            description: apiGoal.description,
+            description: apiGoal.description || '',
             deadline: apiGoal.end_date || apiGoal.start_date,
             status,
             points,
             type: apiGoal.type,
-            progress: apiGoal.progress
+            progress: apiGoal.progress || 0
         };
     }
 
     async function loadGoals() {
-        isLoading = true;
-        error = '';
-        
-        try {
-            const token = authStore.getToken();
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            const apiGoals = await fetchGoals(token, true); // Only active goals
-            goals = apiGoals.map(mapApiGoalToTimeline);
-        } catch (err) {
-            error = err instanceof Error ? err.message : 'Failed to load goals';
-            console.error('Error loading goals:', err);
-        } finally {
-            isLoading = false;
-        }
+        // Usar el store - primero muestra caché, luego actualiza
+        await goalsStore.fetchAll();
     }
 
     async function handleGoalSubmit(event: CustomEvent<any>) {
@@ -90,57 +53,50 @@
                 return;
             }
 
-            const token = authStore.getToken();
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
             const { tasks: goalTasks, ...goalData } = event.detail;
 
             // Add missing required properties if not provided in the event
             const completeGoalData = {
                 ...goalData,
-                metric_key: goalData.metric_key || 'completion',  // Default value
-                target_value: goalData.target_value || 100,  // Default value
-                // Convert progress to string if it exists
+                metric_key: goalData.metric_key || 'completion',
+                target_value: goalData.target_value || 100,
                 progress: goalData.progress !== undefined ? String(goalData.progress) : undefined
             };
 
-            // Create the goal first
-            const newGoal = await createGoal(token, completeGoalData);
+            // Create goal using store
+            const createdGoal = await goalsStore.create(completeGoalData);
+            
+            if (!createdGoal) {
+                throw new Error('Failed to create goal');
+            }
             
             // Then create tasks if any
             if (goalTasks && goalTasks.length > 0) {
                 try {
-                    // Import createGoalTask dynamically
-                    const { createGoalTask } = await import('../../lib/services/goalTasks');
+                    // Import tasksStore dynamically
+                    const { initializeTasksStore } = await import('../../lib/stores/tasks.svelte');
+                    const tasksStore = initializeTasksStore();
                     
                     // Create all tasks in parallel
                     await Promise.all(
-                        goalTasks.map((task: any) => createGoalTask(token, newGoal.id, task))
+                        goalTasks.map((task: any) => tasksStore.create(createdGoal.id!, task))
                     );
                 } catch (taskErr) {
                     console.error('Error creating tasks:', taskErr);
-                    // Don't fail the whole operation if tasks fail
-                    error = 'Goal created but some tasks failed to save';
                 }
             }
-            
-            // Add new goal to the list
-            goals = [...goals, mapApiGoalToTimeline(newGoal)];
         } catch (err) {
-            error = err instanceof Error ? err.message : 'Failed to create goal';
             console.error('Error creating goal:', err);
         }
     }
 
-    // Estadísticas de goals
-    $: totalGoals = goals.length;
-    $: completedGoals = goals.filter(g => g.status === 'completed').length;
-    $: totalPoints = goals.reduce((sum, g) => sum + g.points, 0);
-    $: earnedPoints = goals
+    // Estadísticas de goals - ahora usando $derived
+    const totalGoals = $derived(goals.length);
+    const completedGoals = $derived(goals.filter(g => g.status === 'completed').length);
+    const totalPoints = $derived(goals.reduce((sum, g) => sum + g.points, 0));
+    const earnedPoints = $derived(goals
         .filter(g => g.status === 'completed')
-        .reduce((sum, g) => sum + g.points, 0);
+        .reduce((sum, g) => sum + g.points, 0));
 
     onMount(() => {
         loadGoals();

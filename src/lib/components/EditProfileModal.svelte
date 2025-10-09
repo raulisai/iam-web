@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { profileService } from '$lib/services/profile';
-	import { authStore } from '$lib/stores/authStore';
+	import * as profileService from '$lib/services/profile';
 	import { fly, scale } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 	
@@ -30,17 +29,17 @@
 	
 	onMount(async () => {
 		try {
-			const profile = await profileService.getProfile();
+			const profile = await profileService.getUserProfile();
 			if (profile) {
 				formData = {
 					birth_date: profile.birth_date || '',
 					gender: profile.gender || '',
 					preferred_language: profile.preferred_language || 'es',
 					timezone: profile.timezone || 'America/Mexico_City',
-					weight_kg: profile.weight_kg,
-					height_cm: profile.height_cm,
+					weight_kg: profile.weight_kg ?? null,
+					height_cm: profile.height_cm ?? null,
 					work_schedules: profile.work_schedules || '',
-					hours_available_to_week: profile.hours_available_to_week
+					hours_available_to_week: profile.hours_available_to_week ?? null
 				};
 			}
 		} catch (err: any) {
@@ -64,7 +63,14 @@
 		error = '';
 		
 		try {
-			await profileService.updateProfile(formData);
+			// Convertir null a undefined para que coincida con Partial<UserProfile>
+			const profileData = {
+				...formData,
+				weight_kg: formData.weight_kg ?? undefined,
+				height_cm: formData.height_cm ?? undefined,
+				hours_available_to_week: formData.hours_available_to_week ?? undefined
+			};
+			await profileService.updateUserProfile(profileData);
 			success = true;
 			setTimeout(() => {
 				onSave?.();
@@ -81,14 +87,22 @@
 <!-- Modal Backdrop -->
 <div 
 	class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+	role="button"
+	tabindex="0"
 	onclick={onClose}
+	onkeydown={(e) => e.key === 'Escape' && onClose()}
 	in:scale={{ duration: 200, start: 0.95, opacity: 0 }}
 	out:scale={{ duration: 200, start: 0.95, opacity: 0 }}
 >
 	<!-- Modal Content -->
 	<div 
 		class="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-white/20 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
+		role="dialog"
+		tabindex="-1"
+		aria-modal="true"
+		aria-labelledby="modal-title"
 		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => e.stopPropagation()}
 		in:fly={{ y: 20, duration: 300, easing: quintOut }}
 	>
 		<!-- Header -->
@@ -98,7 +112,7 @@
 					<span class="text-2xl">✏️</span>
 				</div>
 				<div>
-					<h2 class="text-xl font-bold">Editar Perfil</h2>
+					<h2 id="modal-title" class="text-xl font-bold">Editar Perfil</h2>
 					<p class="text-sm text-white/60">Actualiza tu información personal</p>
 				</div>
 			</div>
@@ -106,6 +120,7 @@
 			<button
 				type="button"
 				onclick={onClose}
+				aria-label="Cerrar modal"
 				class="p-2 hover:bg-white/10 rounded-lg transition-colors"
 			>
 				<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

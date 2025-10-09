@@ -10,6 +10,7 @@
         updateGoalTask,
         deleteGoalTask,
         createTaskOccurrence,
+        fetchCompletedTaskIds,
         fetchTaskRecommendations,
         type GoalTask,
         type TaskRecommendation 
@@ -47,7 +48,10 @@
     // Computed
     const completedTasks = $derived(Array.from(completedTaskIds).filter(id => tasks.some(t => t.id === id)).length);
     const totalTasks = $derived(tasks.length);
-    const progress = $derived(goal ? parseFloat(String(goal.progress)) : 0);
+    // Calcular progreso basado en tareas completadas si todas están completadas
+    const calculatedProgress = $derived(totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0);
+    // Si todas las tareas están completadas, establecer progreso al 100%, de lo contrario usar el valor del backend
+    const progress = $derived(completedTasks === totalTasks && totalTasks > 0 ? 100 : (goal ? parseFloat(String(goal.progress || 0)) : 0));
 
     async function loadGoal() {
         isLoading = true;
@@ -81,11 +85,42 @@
     async function loadTasks() {
         try {
             const token = authStore.getToken();
-            if (!token) return;
+            if (!token) {
+                console.error('No token available');
+                return;
+            }
 
-            tasks = await fetchGoalTasks(token, goalId);
+            // Usar try-catch independiente para cargar tareas
+            try {
+                tasks = await fetchGoalTasks(token, goalId);
+            } catch (err) {
+                console.error('Error loading tasks:', err);
+                tasks = []; // Asegurarse de que tasks sea un array vacío si falla
+            }
+            
+            // Cargar occurrences y marcar tareas completadas
+            if (tasks.length > 0) {
+                try {
+                    const completedIds = await fetchCompletedTaskIds(token, tasks);
+                    completedTaskIds = completedIds;
+                    
+                    // Actualizar goal si todas las tareas están completadas
+                    if (completedIds.size === tasks.length && tasks.length > 0) {
+                        try {
+                            // Actualizar el goal al 100% de progreso si todas las tareas están completadas
+                            await updateGoal(token, goalId, { progress: 100 });
+                            if (goal) goal.progress = 100;
+                        } catch (updateErr) {
+                            console.log('No se pudo actualizar el progreso del goal:', updateErr);
+                        }
+                    }
+                } catch (err) {
+                    console.log('Could not load occurrences:', err);
+                    // Continue without occurrences
+                }
+            }
         } catch (err) {
-            console.error('Error loading tasks:', err);
+            console.error('Error in loadTasks:', err);
         }
     }
 
@@ -166,18 +201,33 @@
             const token = authStore.getToken();
             if (!token) return;
 
+            // Marcar como completada inmediatamente para respuesta UI instantánea
+            completedTaskIds.add(taskId);
+            completedTaskIds = new Set(completedTaskIds); // Trigger reactivity
+            
+            // Si todas las tareas están completadas, actualizar el progreso al 100%
+            if (completedTaskIds.size === tasks.length && tasks.length > 0) {
+                if (goal) goal.progress = 100;
+            }
+
             // Try to create occurrence and log completion
             try {
                 await createTaskOccurrence(token, goalId, taskId);
                 console.log('Occurrence created successfully');
+                
+                // Si todas las tareas están completadas, actualizar el goal en el backend
+                if (completedTaskIds.size === tasks.length && tasks.length > 0) {
+                    try {
+                        await updateGoal(token, goalId, { progress: 100 });
+                    } catch (updateErr) {
+                        console.log('No se pudo actualizar el progreso del goal');
+                    }
+                }
             } catch (occurrenceErr: any) {
                 // Handle any backend errors gracefully - use local state
-                console.log('Using local completion tracking:', occurrenceErr.message);
+                console.log('Using local completion tracking, server error:', 
+                    occurrenceErr instanceof Error ? occurrenceErr.message : 'Unknown error');
             }
-            
-            // Always mark as completed locally (works even if backend fails)
-            completedTaskIds.add(taskId);
-            completedTaskIds = new Set(completedTaskIds); // Trigger reactivity
             
             showMessage('\u2705 Tarea completada! +10 XP', 'success');
         } catch (err) {

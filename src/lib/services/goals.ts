@@ -85,7 +85,7 @@ export async function createGoal(token: string, goalData: CreateGoalData): Promi
 /**
  * Update a goal
  */
-export async function updateGoal(token: string, goalId: string, updates: Partial<CreateGoalData>): Promise<Goal> {
+export async function updateGoal(token: string, goalId: string, updates: Partial<Goal>): Promise<Goal> {
 	const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}`, {
 		method: 'PUT',
 		headers: {

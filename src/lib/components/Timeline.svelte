@@ -14,7 +14,7 @@
 <script lang="ts">
     import { slide } from 'svelte/transition';
     import { cubicOut } from 'svelte/easing';
-    import { fetchGoalTasks } from '../services/goalTasks';
+    import { fetchGoalTasks, fetchCompletedTaskIds } from '../services/goalTasks';
     import { getAuthStore } from '../stores/auth.svelte';
     
     export let goals: Goal[] = [];
@@ -60,7 +60,17 @@
                 }
                 
                 const tasks = await fetchGoalTasks(token, goalId);
-                goalTasks[goalId] = tasks;
+                
+                // Load occurrences and filter out completed tasks
+                try {
+                    const completedTaskIds = await fetchCompletedTaskIds(token, tasks);
+                    // Filter out completed tasks from timeline
+                    goalTasks[goalId] = tasks.filter(task => !completedTaskIds.has(task.id || ''));
+                } catch (err) {
+                    console.log('Could not load occurrences, showing all tasks:', err);
+                    // If occurrences can't be loaded, show all tasks
+                    goalTasks[goalId] = tasks;
+                }
             } catch (err) {
                 console.error('Error loading tasks for goal', goalId, ':', err);
                 goalTasks[goalId] = [];

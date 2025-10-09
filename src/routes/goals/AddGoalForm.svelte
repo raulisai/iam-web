@@ -162,6 +162,7 @@
     let editingTaskIndex: number | null = null;
     let createdGoalId: string | null = null; // Store the goal ID after creation
     let usedFallbackRecommendations = false; // Track if we used fallback instead of AI
+    let canRegenerateRecommendations = false; // Track if we can regenerate recommendations
 
     let newTask: GoalTask = {
         title: '',
@@ -207,6 +208,7 @@
         editingTaskIndex = null;
         createdGoalId = null;
         usedFallbackRecommendations = false;
+        canRegenerateRecommendations = false;
         formData = {
             title: '',
             description: '',
@@ -409,7 +411,7 @@
         error = '';
     }
 
-    async function loadRecommendations() {
+    async function loadRecommendations(regenerate: boolean = false) {
         if (isLoadingRecommendations || !createdGoalId) return;
         
         isLoadingRecommendations = true;
@@ -421,20 +423,30 @@
                 throw new Error('No se encontró token de autenticación');
             }
 
-            console.log('Fetching recommendations for goal:', createdGoalId);
+            console.log('Fetching recommendations for goal:', createdGoalId, regenerate ? '(regenerating)' : '');
             
-            // Use the real API to get AI-powered recommendations
+            // Prepare context for the POST request
+            const context = {
+                available_time: '2 horas por día',
+                current_challenges: formData.description || 'Mantener la consistencia y motivación',
+                preferences: 'Prefiero tareas prácticas y medibles',
+                resources: ['Tiempo dedicado', 'Compromiso personal', 'Herramientas disponibles']
+            };
+            
+            // Use the real API to get AI-powered recommendations (always POST)
             const response = await fetchTaskRecommendations(
                 token,
                 createdGoalId,
                 5,
-                true
+                true,
+                context
             );
             
             console.log('Recommendations response:', response);
 
             if (response.success && response.recommendations) {
                 usedFallbackRecommendations = false; // Successfully got AI recommendations
+                canRegenerateRecommendations = true; // Enable regenerate button
                 recommendedTasks = response.recommendations.map((rec: any) => ({
                     title: rec.title,
                     description: rec.description,
@@ -827,23 +839,36 @@
                                         <h4 class="font-bold text-white">✨ Recomendaciones IA</h4>
                                         <p class="mt-1 text-sm text-white/60">Deja que la IA sugiera tareas optimizadas para tu objetivo</p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        class="rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 px-6 py-2 text-sm font-semibold text-white shadow-lg hover:from-purple-600 hover:to-fuchsia-600 disabled:opacity-50"
-                                        on:click={loadRecommendations}
-                                        disabled={isLoadingRecommendations || recommendedTasks.length > 0}
-                                    >
-                                        {#if isLoadingRecommendations}
-                                            <span class="flex items-center gap-2">
-                                                <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                                                Generando...
-                                            </span>
-                                        {:else if recommendedTasks.length > 0}
-                                            ✓ Cargadas
-                                        {:else}
-                                            Generar tareas
+                                    <div class="flex gap-2">
+                                        <button
+                                            type="button"
+                                            class="rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 px-6 py-2 text-sm font-semibold text-white shadow-lg hover:from-purple-600 hover:to-fuchsia-600 disabled:opacity-50"
+                                            on:click={() => loadRecommendations(false)}
+                                            disabled={isLoadingRecommendations || (recommendedTasks.length > 0 && !canRegenerateRecommendations)}
+                                        >
+                                            {#if isLoadingRecommendations}
+                                                <span class="flex items-center gap-2">
+                                                    <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                                                    Generando...
+                                                </span>
+                                            {:else if recommendedTasks.length === 0}
+                                                Generar tareas
+                                            {:else}
+                                                ✓ Cargadas
+                                            {/if}
+                                        </button>
+                                        {#if canRegenerateRecommendations && recommendedTasks.length > 0}
+                                            <button
+                                                type="button"
+                                                class="rounded-full border border-purple-500/50 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
+                                                on:click={() => loadRecommendations(true)}
+                                                disabled={isLoadingRecommendations}
+                                                title="Generar nuevas sugerencias"
+                                            >
+                                                🔄 Regenerar
+                                            </button>
                                         {/if}
-                                    </button>
+                                    </div>
                                 </div>
 
                                 {#if recommendedTasks.length > 0}

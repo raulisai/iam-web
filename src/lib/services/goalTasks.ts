@@ -52,19 +52,26 @@ export async function fetchTaskRecommendations(
 	params.append('use_ai', String(useAI));
 	params.append('count', String(count));
 
-	const method = context ? 'POST' : 'GET';
-	const body = context ? JSON.stringify({ context }) : undefined;
+	// Always use POST with context (provide defaults if not specified)
+	const requestBody = {
+		context: context || {
+			available_time: '2 horas por día',
+			current_challenges: 'Mantener la consistencia',
+			preferences: 'Prefiero tareas prácticas y medibles',
+			resources: ['Tiempo', 'Motivación', 'Disciplina']
+		}
+	};
 
 	const response = await fetch(
 		`${BACKEND_URL}/api/goals/${goalId}/recommendations?${params.toString()}`,
 		{
-			method,
+			method: 'POST',
 			headers: {
 				Authorization: `Bearer ${token}`,
 				'Content-Type': 'application/json',
 				Accept: 'application/json'
 			},
-			body
+			body: JSON.stringify(requestBody)
 		}
 	);
 

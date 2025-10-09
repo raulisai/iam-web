@@ -139,6 +139,25 @@ class AuthStore {
 		}
 	}
 
+	// Manejar errores de autenticación (token expirado o inválido)
+	handleUnauthorized() {
+		console.warn('Sesión expirada o inválida. Redirigiendo al login...');
+		
+		// Limpiar estado local
+		this.user = null;
+		this.isAuthenticated = false;
+		
+		// Limpiar localStorage
+		if (typeof window !== 'undefined') {
+			localStorage.removeItem('user');
+			localStorage.removeItem('token');
+			localStorage.setItem('sessionExpired', 'true'); // Flag para mostrar mensaje
+			
+			// Redirigir al login
+			window.location.href = '/login';
+		}
+	}
+
 	getToken(): string | null {
 		if (typeof window === 'undefined') return null;
 		return localStorage.getItem('token');

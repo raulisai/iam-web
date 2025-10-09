@@ -76,6 +76,14 @@ export async function fetchTaskRecommendations(
 	);
 
 	if (!response.ok) {
+		// Si es 401, el token expiró o es inválido
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
+		
 		// Try to parse error as JSON, but handle HTML responses
 		const contentType = response.headers.get('content-type');
 		let errorMessage = `Failed to fetch recommendations: ${response.status} ${response.statusText}`;
@@ -119,6 +127,12 @@ export async function createGoalTask(
 	});
 
 	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
 		const error = await response.json();
 		throw new Error(error.error || `Failed to create task: ${response.statusText}`);
 	}
@@ -139,6 +153,12 @@ export async function fetchGoalTasks(token: string, goalId: string): Promise<Goa
 	});
 
 	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
 		throw new Error(`Failed to fetch tasks: ${response.statusText}`);
 	}
 

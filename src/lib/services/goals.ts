@@ -21,6 +21,14 @@ export async function fetchGoals(token: string, isActive?: boolean): Promise<Goa
 	});
 
 	if (!response.ok) {
+		// Si es 401, el token expiró o es inválido
+		if (response.status === 401) {
+			// Importar dinámicamente para evitar ciclos
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
 		throw new Error(`Failed to fetch goals: ${response.statusText}`);
 	}
 
@@ -42,6 +50,12 @@ export async function createGoal(token: string, goalData: CreateGoalData): Promi
 	});
 
 	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
 		const error = await response.json();
 		throw new Error(error.error || `Failed to create goal: ${response.statusText}`);
 	}
@@ -64,6 +78,12 @@ export async function updateGoal(token: string, goalId: string, updates: Partial
 	});
 
 	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
 		const error = await response.json();
 		throw new Error(error.error || `Failed to update goal: ${response.statusText}`);
 	}
@@ -84,6 +104,12 @@ export async function deleteGoal(token: string, goalId: string): Promise<void> {
 	});
 
 	if (!response.ok) {
+		if (response.status === 401) {
+			const { getAuthStore } = await import('../stores/auth.svelte');
+			const authStore = getAuthStore();
+			authStore.handleUnauthorized();
+			throw new Error('UNAUTHORIZED');
+		}
 		const error = await response.json();
 		throw new Error(error.error || `Failed to delete goal: ${response.statusText}`);
 	}

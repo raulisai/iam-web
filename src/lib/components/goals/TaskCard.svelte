@@ -1,15 +1,15 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
     import type { GoalTask } from '../../services/goalTasks';
-
-    const dispatch = createEventDispatcher();
 
     interface Props {
         task: GoalTask;
         isCompleted?: boolean;
+        oncomplete?: (taskId: string) => void;
+        onedit?: (taskId: string) => void;
+        ondelete?: (taskId: string) => void;
     }
 
-    let { task, isCompleted = false }: Props = $props();
+    let { task, isCompleted = false, oncomplete, onedit, ondelete }: Props = $props();
 
     const taskType = $derived((task.type || 'habit') as 'mind' | 'body' | 'habit' | 'one_off');
     const taskWeight = $derived(task.weight || 1);
@@ -42,18 +42,18 @@
         if (isCompleted) return;
         isAnimating = true;
         setTimeout(() => {
-            dispatch('complete', task.id);
+            oncomplete?.(task.id || '');
         }, 300);
     }
 
     function handleEdit() {
         showMenu = false;
-        dispatch('edit', task.id);
+        onedit?.(task.id || '');
     }
 
     function handleDelete() {
         showMenu = false;
-        dispatch('delete', task.id);
+        ondelete?.(task.id || '');
     }
 </script>
 
@@ -62,10 +62,10 @@
 >
     <!-- Glow effect on hover -->
     {#if !isCompleted}
-        <div class="absolute inset-0 bg-gradient-to-br {typeColors[taskType]} opacity-0 group-hover:opacity-50 blur-xl rounded-xl transition-opacity"></div>
+        <div class="absolute inset-0 bg-gradient-to-br {typeColors[taskType]} opacity-0 group-hover:opacity-50 blur-xl rounded-xl transition-opacity pointer-events-none"></div>
     {/if}
 
-    <div class="relative p-4">
+    <div class="relative z-10 p-4">
         <div class="flex items-start gap-3">
             <!-- Checkbox -->
             <button
@@ -119,9 +119,9 @@
 
             <!-- Menu -->
             {#if !isCompleted}
-                <div class="relative">
+                <div class="relative z-30">
                     <button
-                        onclick={() => showMenu = !showMenu}
+                        onclick={(e) => { e.stopPropagation(); showMenu = !showMenu; }}
                         class="p-1 hover:bg-white/10 rounded transition-colors opacity-0 group-hover:opacity-100"
                         aria-label="Opciones"
                     >
@@ -131,9 +131,9 @@
                     </button>
 
                     {#if showMenu}
-                        <div class="absolute right-0 top-8 bg-neutral-800 border border-white/10 rounded-lg shadow-xl py-1 z-10 min-w-[120px]">
+                        <div class="absolute right-0 top-8 bg-neutral-800 border border-white/10 rounded-lg shadow-xl py-1 z-[250] min-w-[120px]">
                             <button
-                                onclick={handleEdit}
+                                onclick={(e) => { e.stopPropagation(); handleEdit(); }}
                                 class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center gap-2"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@
                                 Editar
                             </button>
                             <button
-                                onclick={handleDelete}
+                                onclick={(e) => { e.stopPropagation(); handleDelete(); }}
                                 class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,14 +158,6 @@
     </div>
 </div>
 
-<!-- Click outside to close menu -->
-{#if showMenu}
-    <button
-        class="fixed inset-0 z-0"
-        onclick={() => showMenu = false}
-        aria-label="Cerrar menú"
-    ></button>
-{/if}
 
 <style>
     @keyframes bounce-out {

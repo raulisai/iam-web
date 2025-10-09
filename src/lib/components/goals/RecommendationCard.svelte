@@ -1,15 +1,13 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
     import type { TaskRecommendation } from '../../services/goalTasks';
-
-    const dispatch = createEventDispatcher();
 
     interface Props {
         recommendation: TaskRecommendation;
         index: number;
+        onadd?: (recommendation: TaskRecommendation) => void;
     }
 
-    let { recommendation, index }: Props = $props();
+    let { recommendation, index, onadd }: Props = $props();
 
     const priorityColors = {
         low: 'from-gray-500/20 to-gray-600/20 border-gray-500/30',
@@ -30,7 +28,7 @@
     };
 
     function handleAdd() {
-        dispatch('add', recommendation);
+        onadd?.(recommendation);
     }
 </script>
 

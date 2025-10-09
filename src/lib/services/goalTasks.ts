@@ -299,7 +299,7 @@ export async function updateGoalTask(
 				authToken = authStore.getToken() || '';
 			}
 			
-			const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}/tasks/${taskId}`, {
+			const response = await fetch(`${BACKEND_URL}/api/goals/tasks/${taskId}`, {
 				method: 'PUT',
 				headers: {
 					Authorization: `Bearer ${authToken}`,
@@ -535,7 +535,7 @@ export async function deleteGoalTask(token: string, goalId: string, taskId: stri
 				authToken = authStore.getToken() || '';
 			}
 			
-			const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}/tasks/${taskId}`, {
+			const response = await fetch(`${BACKEND_URL}/api/goals/tasks/${taskId}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: `Bearer ${authToken}`,

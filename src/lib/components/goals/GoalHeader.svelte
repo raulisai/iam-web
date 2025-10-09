@@ -1,15 +1,13 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
     import type { Goal } from '../../services/goals';
-
-    const dispatch = createEventDispatcher();
 
     interface Props {
         goal: Goal;
         isEditing?: boolean;
+        onupdate?: (data: { title: string; description: string }) => void;
     }
 
-    let { goal, isEditing = false }: Props = $props();
+    let { goal, isEditing = false, onupdate }: Props = $props();
 
     const typeColors = {
         short: 'from-blue-500 to-blue-600',
@@ -38,7 +36,7 @@
     }
 
     function saveEdits() {
-        dispatch('update', {
+        onupdate?.({
             title: editedTitle,
             description: editedDescription
         });
@@ -55,14 +53,14 @@
 </script>
 
 <div class="relative group">
-    <div class="absolute inset-0 bg-gradient-to-br {typeColors[goal.type]} opacity-20 rounded-2xl blur-xl"></div>
+    <div class="absolute inset-0 bg-gradient-to-br {typeColors[goal.type]} opacity-20 rounded-2xl blur-xl pointer-events-none"></div>
     
-    <div class="relative bg-gradient-to-br {typeColors[goal.type]} rounded-2xl p-6 text-white shadow-2xl border border-white/10">
+    <div class="relative z-10 bg-gradient-to-br {typeColors[goal.type]} rounded-2xl p-6 text-white shadow-2xl border border-white/10">
         <!-- Edit Button -->
         {#if !isEditingLocal}
             <button
                 onclick={startEditing}
-                class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                class="absolute top-4 right-4 z-20 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                 aria-label="Edit goal"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

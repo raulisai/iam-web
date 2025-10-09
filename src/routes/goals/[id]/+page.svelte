@@ -16,6 +16,8 @@
     import ProgressBar from '../../../lib/components/goals/ProgressBar.svelte';
     import TaskCard from '../../../lib/components/goals/TaskCard.svelte';
     import RecommendationCard from '../../../lib/components/goals/RecommendationCard.svelte';
+    import TaskFormModal from '../../../lib/components/goals/TaskFormModal.svelte';
+    import TaskDeleteModal from '../../../lib/components/goals/TaskDeleteModal.svelte';
     
     const authStore = getAuthStore();
     const goalsStore = initializeGoalsStore();
@@ -33,16 +35,11 @@
     let successMessage = $state('');
     let recommendations: TaskRecommendation[] = $state([]);
     let showDeleteConfirm = $state(false);
-    let showAddTaskForm = $state(false);
-    let showEditTaskForm = $state(false);
+    let showTaskFormModal = $state(false);
+    let taskFormMode: 'create' | 'edit' = $state('create');
     let editingTask: GoalTask | null = $state(null);
-    
-    // Task form
-    let newTaskTitle = $state('');
-    let newTaskDescription = $state('');
-    let newTaskType: 'mind' | 'body' | 'habit' | 'one_off' = $state('habit');
-    let newTaskRequired = $state(true);
-    let newTaskWeight = $state(1);
+    let showTaskDeleteModal = $state(false);
+    let deletingTask: GoalTask | null = $state(null);
 
     // Computed
     const completedTasks = $derived(Array.from(completedTaskIds).filter(id => tasks.some(t => t.id === id)).length);
@@ -106,9 +103,9 @@
         }
     }
 
-    async function handleGoalUpdate(event: CustomEvent) {
+    async function handleGoalUpdate(data: { title: string; description: string }) {
         try {
-            const success = await goalsStore.update(goalId, event.detail);
+            const success = await goalsStore.update(goalId, data);
             if (success) {
                 showMessage('✅ Goal actualizado', 'success');
             } else {
@@ -119,45 +116,42 @@
         }
     }
 
-    async function handleAddTask() {
-        if (!newTaskTitle.trim()) {
-            showMessage('El título es requerido', 'error');
-            return;
-        }
-
+    async function handleTaskFormSubmit(data: Partial<GoalTask>) {
         try {
-            const taskData: GoalTask = {
-                title: newTaskTitle.trim(),
-                description: newTaskDescription.trim(),
-                type: newTaskType,
-                required: newTaskRequired,
-                weight: newTaskWeight,
-                priority: 'medium' as 'low' | 'medium' | 'high'
-            };
-
-            const newTask = await tasksStore.create(goalId, taskData);
-            
-            if (newTask) {
-                // Reset form
-                newTaskTitle = '';
-                newTaskDescription = '';
-                newTaskType = 'habit';
-                newTaskRequired = true;
-                newTaskWeight = 1;
-                showAddTaskForm = false;
+            if (taskFormMode === 'create') {
+                const newTask = await tasksStore.create(goalId, data as GoalTask);
                 
-                showMessage('✅ Tarea creada', 'success');
-            } else {
-                showMessage('Error al crear la tarea', 'error');
+                if (newTask) {
+                    showMessage('✅ Tarea creada', 'success');
+                } else {
+                    showMessage('Error al crear la tarea', 'error');
+                }
+            } else if (taskFormMode === 'edit' && editingTask?.id) {
+                const success = await tasksStore.update(goalId, editingTask.id, data);
+                
+                if (success) {
+                    showMessage('✅ Tarea actualizada', 'success');
+                } else {
+                    showMessage('Error al actualizar la tarea', 'error');
+                }
             }
         } catch (err) {
-            showMessage('Error al crear la tarea', 'error');
+            showMessage(taskFormMode === 'create' ? 'Error al crear la tarea' : 'Error al actualizar la tarea', 'error');
         }
     }
+    
+    function handleOpenCreateTask() {
+        taskFormMode = 'create';
+        editingTask = null;
+        showTaskFormModal = true;
+    }
+    
+    function handleCloseTaskForm() {
+        showTaskFormModal = false;
+        editingTask = null;
+    }
 
-    async function handleCompleteTask(event: CustomEvent) {
-        const taskId = event.detail;
-        
+    async function handleCompleteTask(taskId: string) {
         try {
             const success = await tasksStore.complete(goalId, taskId);
             
@@ -177,26 +171,34 @@
         }
     }
 
-    async function handleEditTask(event: CustomEvent) {
-        const taskId = event.detail;
+    async function handleEditTask(taskId: string) {
         const task = tasks.find(t => t.id === taskId);
         
         if (task) {
+            taskFormMode = 'edit';
             editingTask = task;
-            newTaskTitle = task.title;
-            newTaskDescription = task.description || '';
-            newTaskType = (task.type as any) || 'habit';
-            newTaskRequired = task.required || false;
-            newTaskWeight = task.weight || 1;
-            showEditTaskForm = true;
+            showTaskFormModal = true;
+        } else {
+            console.error('Page: Task not found', taskId);
         }
     }
 
-    async function handleDeleteTask(event: CustomEvent) {
-        const taskId = event.detail;
+    async function handleDeleteTask(taskId: string) {
+        const task = tasks.find(t => t.id === taskId);
+        
+        if (task) {
+            deletingTask = task;
+            showTaskDeleteModal = true;
+        } else {
+            console.error('Page: Task not found', taskId);
+        }
+    }
+    
+    async function handleConfirmDeleteTask() {
+        if (!deletingTask?.id) return;
         
         try {
-            const success = await tasksStore.remove(goalId, taskId);
+            const success = await tasksStore.remove(goalId, deletingTask.id);
             if (success) {
                 showMessage('🗑️ Tarea eliminada', 'success');
             } else {
@@ -206,44 +208,13 @@
             showMessage('Error al eliminar la tarea', 'error');
         }
     }
-
-    async function handleSaveEditTask() {
-        if (!newTaskTitle.trim() || !editingTask?.id) return;
-
-        try {
-            const taskData: Partial<GoalTask> = {
-                title: newTaskTitle.trim(),
-                description: newTaskDescription.trim(),
-                type: newTaskType,
-                required: newTaskRequired,
-                weight: newTaskWeight,
-                priority: 'medium' as 'low' | 'medium' | 'high'
-            };
-
-            const success = await tasksStore.update(goalId, editingTask.id, taskData);
-            
-            if (success) {
-                // Reset form
-                newTaskTitle = '';
-                newTaskDescription = '';
-                newTaskType = 'habit';
-                newTaskRequired = true;
-                newTaskWeight = 1;
-                editingTask = null;
-                showEditTaskForm = false;
-                
-                showMessage('✅ Tarea actualizada', 'success');
-            } else {
-                showMessage('Error al actualizar la tarea', 'error');
-            }
-        } catch (err) {
-            showMessage('Error al actualizar la tarea', 'error');
-        }
+    
+    function handleCloseDeleteModal() {
+        showTaskDeleteModal = false;
+        deletingTask = null;
     }
 
-    async function handleAddRecommendation(event: CustomEvent) {
-        const recommendation: TaskRecommendation = event.detail;
-        
+    async function handleAddRecommendation(recommendation: TaskRecommendation) {
         try {
             const taskData: GoalTask = {
                 title: recommendation.title,
@@ -302,7 +273,7 @@
     <title>{goal?.title || 'Goal'} - IAM Dashboard</title>
 </svelte:head>
 
-<div class="min-h-screen bg-neutral-950 pb-20">
+<div class="relative z-0 min-h-screen bg-neutral-950 pb-20">
     {#if isLoading}
         <!-- Loading State -->
         <div class="flex items-center justify-center min-h-screen">
@@ -364,7 +335,7 @@
             <!-- Layout: Header + Progress on top -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="lg:col-span-2">
-                    <GoalHeader {goal} on:update={handleGoalUpdate} />
+                    <GoalHeader {goal} onupdate={handleGoalUpdate} />
                 </div>
                 <div>
                     <ProgressBar {progress} {completedTasks} {totalTasks} />
@@ -383,7 +354,7 @@
                             <span class="text-sm font-normal text-white/60">({tasks.length})</span>
                         </h2>
                         <button
-                            onclick={() => showAddTaskForm = !showAddTaskForm}
+                            onclick={handleOpenCreateTask}
                             class="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20"
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,132 +363,6 @@
                             Nueva Tarea
                         </button>
                     </div>
-
-                    <!-- Add Task Form -->
-                    {#if showAddTaskForm}
-                    <div class="bg-neutral-900 rounded-xl border border-white/10 p-6 space-y-4">
-                        <h3 class="text-lg font-semibold text-white">➕ Crear Nueva Tarea</h3>
-                        <input
-                            type="text"
-                            bind:value={newTaskTitle}
-                            placeholder="Título de la tarea..."
-                            class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                        />
-                        <textarea
-                            bind:value={newTaskDescription}
-                            placeholder="Descripción (opcional)..."
-                            class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
-                            rows="2"
-                        ></textarea>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="taskType" class="block text-sm text-white/60 mb-2">Tipo</label>
-                                <select id="taskType" bind:value={newTaskType} class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50">
-                                    <option value="mind">🧠 Mental</option>
-                                    <option value="body">💪 Físico</option>
-                                    <option value="habit">🔄 Hábito</option>
-                                    <option value="one_off">⚡ Única</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="taskWeight" class="block text-sm text-white/60 mb-2">Peso</label>
-                                <input
-                                    id="taskWeight"
-                                    type="number"
-                                    bind:value={newTaskWeight}
-                                    min="0.5"
-                                    max="5"
-                                    step="0.5"
-                                    class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                                />
-                            </div>
-                        </div>
-
-                        <label class="flex items-center gap-2 text-white cursor-pointer">
-                            <input type="checkbox" bind:checked={newTaskRequired} class="w-4 h-4 rounded border-white/20 bg-neutral-800 text-purple-500 focus:ring-purple-500/50" />
-                            <span class="text-sm">Requerida para progreso</span>
-                        </label>
-
-                        <div class="flex gap-2">
-                            <button
-                                onclick={handleAddTask}
-                                class="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg font-medium transition-all"
-                            >
-                                Crear Tarea
-                            </button>
-                            <button
-                                onclick={() => showAddTaskForm = false}
-                                class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-all"
-                            >
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                    {/if}
-
-                    <!-- Edit Task Form -->
-                    {#if showEditTaskForm && editingTask}
-                    <div class="bg-neutral-900 rounded-xl border border-purple-500/30 p-6 space-y-4">
-                        <h3 class="text-lg font-semibold text-white">✏️ Editar Tarea</h3>
-                        <input
-                            type="text"
-                            bind:value={newTaskTitle}
-                            placeholder="Título de la tarea..."
-                            class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                        />
-                        <textarea
-                            bind:value={newTaskDescription}
-                            placeholder="Descripción (opcional)..."
-                            class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
-                            rows="2"
-                        ></textarea>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="editTaskType" class="block text-sm text-white/60 mb-2">Tipo</label>
-                                <select id="editTaskType" bind:value={newTaskType} class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50">
-                                    <option value="mind">🧠 Mental</option>
-                                    <option value="body">💪 Físico</option>
-                                    <option value="habit">🔄 Hábito</option>
-                                    <option value="one_off">⚡ Única</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="editTaskWeight" class="block text-sm text-white/60 mb-2">Peso</label>
-                                <input
-                                    id="editTaskWeight"
-                                    type="number"
-                                    bind:value={newTaskWeight}
-                                    min="0.5"
-                                    max="5"
-                                    step="0.5"
-                                    class="w-full bg-neutral-800 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                                />
-                            </div>
-                        </div>
-
-                        <label class="flex items-center gap-2 text-white cursor-pointer">
-                            <input type="checkbox" bind:checked={newTaskRequired} class="w-4 h-4 rounded border-white/20 bg-neutral-800 text-purple-500 focus:ring-purple-500/50" />
-                            <span class="text-sm">Requerida para progreso</span>
-                        </label>
-
-                        <div class="flex gap-2">
-                            <button
-                                onclick={handleSaveEditTask}
-                                class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
-                            >
-                                Guardar Cambios
-                            </button>
-                            <button
-                                onclick={() => { showEditTaskForm = false; editingTask = null; }}
-                                class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-all"
-                            >
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                    {/if}
 
                     <!-- Tasks List -->
                     {#if tasks.length === 0}
@@ -532,9 +377,9 @@
                             <TaskCard 
                                 {task}
                                 isCompleted={completedTaskIds.has(task.id || '')}
-                                on:complete={handleCompleteTask}
-                                on:edit={handleEditTask}
-                                on:delete={handleDeleteTask}
+                                oncomplete={handleCompleteTask}
+                                onedit={handleEditTask}
+                                ondelete={handleDeleteTask}
                             />
                         {/each}
                     </div>
@@ -583,7 +428,7 @@
                             <RecommendationCard 
                                 {recommendation}
                                 index={i}
-                                on:add={handleAddRecommendation}
+                                onadd={handleAddRecommendation}
                             />
                         {/each}
                     </div>
@@ -593,6 +438,23 @@
         </div>
     {/if}
 </div>
+
+<!-- Task Form Modal -->
+<TaskFormModal
+    bind:isOpen={showTaskFormModal}
+    mode={taskFormMode}
+    task={editingTask}
+    onClose={handleCloseTaskForm}
+    onSubmit={handleTaskFormSubmit}
+/>
+
+<!-- Task Delete Modal -->
+<TaskDeleteModal
+    bind:isOpen={showTaskDeleteModal}
+    task={deletingTask}
+    onClose={handleCloseDeleteModal}
+    onConfirm={handleConfirmDeleteTask}
+/>
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirm}

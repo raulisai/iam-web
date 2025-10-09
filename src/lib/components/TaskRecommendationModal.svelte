@@ -181,10 +181,11 @@
                         <div class="space-y-4">
                             <!-- Task Name -->
                             <div>
-                                <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                <label for="custom-task-name" class="block text-sm font-medium text-neutral-300 mb-2">
                                     Task Name *
                                 </label>
                                 <input
+                                    id="custom-task-name"
                                     type="text"
                                     bind:value={customTaskName}
                                     placeholder="e.g., Morning Meditation, 30-min Run"
@@ -194,10 +195,11 @@
                             
                             <!-- Task Description -->
                             <div>
-                                <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                <label for="custom-task-desc" class="block text-sm font-medium text-neutral-300 mb-2">
                                     Description
                                 </label>
                                 <textarea
+                                    id="custom-task-desc"
                                     bind:value={customTaskDesc}
                                     rows="2"
                                     placeholder="Describe your task..."
@@ -208,10 +210,11 @@
                             <!-- XP and Duration -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                    <label for="custom-task-xp" class="block text-sm font-medium text-neutral-300 mb-2">
                                         Reward XP
                                     </label>
                                     <input
+                                        id="custom-task-xp"
                                         type="number"
                                         bind:value={customTaskXP}
                                         min="10"
@@ -221,10 +224,11 @@
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-neutral-300 mb-2">
+                                    <label for="custom-task-minutes" class="block text-sm font-medium text-neutral-300 mb-2">
                                         Duration (minutes)
                                     </label>
                                     <input
+                                        id="custom-task-minutes"
                                         type="number"
                                         bind:value={customTaskMinutes}
                                         min="5"

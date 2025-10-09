@@ -31,7 +31,7 @@
     </div>
     <div class="relative h-[calc(100%-1.75rem)]">
         <div class="absolute inset-0 overflow-x-auto overflow-y-hidden px-4">
-            <div class="flex h-full items-center gap-3 py-1 pr-4 will-change-transform">
+            <div class="flex h-full items-center gap-3 py-1 pr-4 will-change-transform {tasks.length === 0 && !isLoading ? 'justify-center' : ''}">
                 {#if isLoading}
                     <!-- Skeleton Loader -->
                     {#each Array(4) as _, i}

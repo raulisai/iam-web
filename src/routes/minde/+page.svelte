@@ -18,6 +18,7 @@
     let tasks = $state<Task[]>([]);
     let snapshot = $state<PerformanceSnapshot | null>(null);
     let isLoadingStats = $state(true);
+    let isLoadingTasks = $state(true);
     
     // Recommendations state
     let showRecommendationsModal = $state(false);
@@ -38,8 +39,13 @@
     });
 
     async function loadMindTasks() {
-        tasks = await getMindTasks(authStore);
-        console.log('Tareas obtenidas:', tasks);
+        isLoadingTasks = true;
+        try {
+            tasks = await getMindTasks(authStore);
+            console.log('Tareas obtenidas:', tasks);
+        } finally {
+            isLoadingTasks = false;
+        }
     }
 
     async function loadStats() {
@@ -207,27 +213,39 @@
                     <div>
                         <h2 class="text-lg font-semibold text-white mb-4">Mind Missions</h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {#if tasks.length === 0}
-                                {#each Array(6) as _, i}
-                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 transition-colors cursor-pointer relative">
-                                        <button 
-                                            aria-label="Done" 
-                                            class="absolute top-2 right-2 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400/50 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/50 hover:scale-110 active:scale-95 transition-all duration-200 hover:rotate-12 z-10" 
-                                            onclick={(e) => { e.stopPropagation(); }}
-                                        >
-                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                        </button>
+                            {#if isLoadingTasks}
+                                <!-- Skeleton Loader -->
+                                {#each Array(4) as _, i}
+                                    <div class="p-4 rounded-xl border border-white/10 bg-gradient-to-br from-neutral-800 to-neutral-900 animate-pulse">
                                         <div class="flex items-center mb-2">
-                                            <span class="text-2xl">⭐</span>
+                                            <div class="w-8 h-8 bg-neutral-700 rounded-full"></div>
                                         </div>
-                                        <div class="text-sm font-semibold text-white mb-1">Mission {i + 1}</div>
-                                        <div class="text-xs text-neutral-400">Complete a quick quest</div>
-                                        <div class="text-xs text-neutral-500 mt-1">Time: 30m</div>
-                                        <div class="mt-auto pt-2 flex items-center justify-end">
-                                            <span class="text-xs text-emerald-300 font-bold">+30</span>
+                                        <div class="h-4 bg-neutral-700 rounded w-3/4 mb-2"></div>
+                                        <div class="h-3 bg-neutral-700 rounded w-full mb-1"></div>
+                                        <div class="h-3 bg-neutral-700 rounded w-1/2 mt-2"></div>
+                                        <div class="mt-2 flex items-center justify-between">
+                                            <div class="flex gap-1">
+                                                {#each Array(5) as _}
+                                                    <div class="w-3 h-3 bg-neutral-700 rounded-full"></div>
+                                                {/each}
+                                            </div>
+                                            <div class="h-3 bg-neutral-700 rounded w-10"></div>
                                         </div>
                                     </div>
                                 {/each}
+                            {:else if tasks.length === 0}
+                                <div class="col-span-full flex flex-col items-center justify-center p-12 rounded-xl border-2 border-dashed border-purple-500/30 bg-gradient-to-br from-purple-950/20 to-neutral-900/50">
+                                    <div class="text-6xl mb-4">🧠</div>
+                                    <h3 class="text-xl font-semibold text-white mb-2">No Mind Missions Yet</h3>
+                                    <p class="text-neutral-400 text-center mb-6 max-w-md">Boost your mental power! Add your first mind mission to enhance your cognitive abilities and earn rewards.</p>
+                                    <button 
+                                        class="px-8 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold text-lg shadow-lg hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2"
+                                        onclick={handleAddTaskClick}
+                                    >
+                                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        Add Mind Mission
+                                    </button>
+                                </div>
                             {:else}
                                 {#each tasks as task (task.id)}
                                     {@const icon = task.icon ?? '⭐'}

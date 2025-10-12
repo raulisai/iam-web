@@ -13,12 +13,11 @@ export interface BotRule {
 }
 
 export interface CreateBotRuleData {
-	rule_key: string;
 	name: string;
-	descr?: string;
 	condition: Record<string, any>;
 	action: Record<string, any>;
-	is_active?: boolean;
+	priority?: number;
+	active?: boolean;
 }
 
 /**
@@ -100,8 +99,15 @@ export async function createBotRule(authStore: any, ruleData: CreateBotRuleData)
 		});
 
 		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.error || 'Failed to create bot rule');
+			let errorMsg = 'Failed to create bot rule';
+			try {
+				const error = await response.json();
+				errorMsg = error.error || error.message || errorMsg;
+			} catch (e) {
+				// Response no es JSON válido
+				errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+			}
+			throw new Error(errorMsg);
 		}
 
 		return await response.json();

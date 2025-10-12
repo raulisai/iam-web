@@ -34,7 +34,11 @@
 		gender: '',
 		birth_date: '',
 		weight_kg: null as number | null,
-		height_cm: null as number | null
+		height_cm: null as number | null,
+		work_schedules: '9:00-17:00',
+		day_work: 'L,M,M,J,V',
+		hours_available_to_week: 10,
+		current_status: 'active'
 	});
 	
 	// Step 2: Activities
@@ -72,7 +76,11 @@
 					gender: existingProfile.gender || '',
 					birth_date: existingProfile.birth_date || '',
 					weight_kg: existingProfile.weight_kg || null,
-					height_cm: existingProfile.height_cm || null
+					height_cm: existingProfile.height_cm || null,
+					work_schedules: existingProfile.work_schedules || '9:00-17:00',
+					day_work: (existingProfile as any).day_work || 'L,M,M,J,V',
+					hours_available_to_week: existingProfile.hours_available_to_week || 10,
+					current_status: existingProfile.current_status || 'active'
 				};
 				
 				console.log('✅ Perfil existente cargado:', existingProfile);
@@ -129,6 +137,7 @@
 		
 		try {
 			// 1. Create or update profile (auto-detects)
+			console.log('💾 Guardando perfil...', profileData);
 			await saveOrUpdateUserProfile({
 				...profileData,
 				weight_kg: profileData.weight_kg ?? undefined,
@@ -136,10 +145,11 @@
 			});
 			
 			// 2. Generate and create bot rules
-			// Transform time IDs to schedule objects
+			// Transform time IDs to schedule objects with updated mappings
 			const timeSlotMap: Record<string, { id: string; time: string }> = {
-				morning: { id: 'morning', time: '6:00-12:00' },
-				afternoon: { id: 'afternoon', time: '12:00-18:00' },
+				morning: { id: 'morning', time: '6:00-9:00' },
+				midday: { id: 'midday', time: '12:00-14:00' },
+				afternoon: { id: 'afternoon', time: '14:00-18:00' },
 				evening: { id: 'evening', time: '18:00-22:00' },
 				night: { id: 'night', time: '22:00-6:00' }
 			};
@@ -162,10 +172,22 @@
 			
 			const selectedActivityObjects = selectedActivities.map(actId => activityMap[actId]).filter(Boolean);
 			
+			console.log('🤖 Generando reglas de bot...', {
+				activities: selectedActivityObjects.length,
+				schedules: selectedSchedules.length,
+				days: selectedDays.length
+			});
+			
 			const botRules = generateBotRules(selectedActivityObjects, selectedSchedules, selectedDays);
 			
+			console.log(`📋 Creando ${botRules.length} reglas de bot...`);
 			for (const ruleData of botRules) {
-				await createBotRule(authStore, ruleData);
+				try {
+					await createBotRule(authStore, ruleData);
+					console.log('✅ Regla creada:', ruleData.name);
+				} catch (err) {
+					console.error('❌ Error creando regla:', ruleData.name, err);
+				}
 			}
 			
 			// 3. Create selected templates
@@ -174,7 +196,16 @@
 			);
 			
 			for (const template of selectedTemplateData) {
-				await createTaskTemplate(authStore, template);
+				// Convert UI format to API format
+				await createTaskTemplate(authStore, {
+					key: template.id,
+					name: template.name,
+					desc: template.description || template.name,
+					category: template.category,
+					estimated_minutes: template.duration,
+					difficulty: template.difficulty,
+					reward_xp: template.difficulty * 20
+				});
 			}
 			
 			// 4. Create custom tasks
@@ -182,7 +213,7 @@
 				await createTaskTemplate(authStore, {
 					key: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
 					name: task.name,
-					descr: task.description || '',
+					desc: task.description || `Tarea personalizada de ${task.category === 'mind' ? 'mente' : 'cuerpo'}`,
 					category: task.category,
 					estimated_minutes: task.duration,
 					difficulty: task.difficulty,

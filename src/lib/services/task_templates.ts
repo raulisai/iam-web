@@ -10,7 +10,7 @@ export interface TaskTemplate {
 	reward_xp?: number;
 	default_params?: Record<string, any>;
 	created_by?: string;
-	descr?: string;
+	desc?: string;
 	created_at?: string;
 	updated_at?: string;
 }
@@ -19,7 +19,7 @@ export interface CreateTaskTemplateData {
 	key: string;
 	name: string;
 	category: 'mind' | 'body';
-	descr: string;
+	desc?: string;
 	estimated_minutes?: number;
 	difficulty?: number;
 	reward_xp?: number;
@@ -163,8 +163,15 @@ export async function createTaskTemplate(authStore: any, templateData: CreateTas
 		});
 
 		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.error || 'Failed to create task template');
+			let errorMsg = 'Failed to create task template';
+			try {
+				const error = await response.json();
+				errorMsg = error.error || error.message || errorMsg;
+			} catch (e) {
+				// Response no es JSON válido
+				errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+			}
+			throw new Error(errorMsg);
 		}
 
 		return await response.json();

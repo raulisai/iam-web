@@ -220,12 +220,12 @@
 
             <!-- Mind & Body Visualization -->
             <div class="px-4 py-4">
-                <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="grid grid-cols-2 gap-3 mb-4" style="height: 280px;">
                     <!-- Mind Component -->
                     <div 
                         role="button"
                         tabindex="0"
-                        class="relative bg-gradient-to-br from-blue-950/40 to-purple-950/40 rounded-2xl p-3 border border-blue-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
+                        class="relative bg-gradient-to-br from-blue-950/40 to-purple-950/40 rounded-2xl p-4 border border-blue-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
                         onclick={() => goto("/minde")}
                         onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/minde')}
                         class:translate-x-0={isVisible} 
@@ -234,15 +234,19 @@
                         class:opacity-0={!isVisible}
                     >
                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent"></div>
-                        <div class="relative z-10">
-                            <div class="flex items-center justify-between mb-2">
+                        <div class="relative z-10 h-full flex flex-col">
+                            <div class="flex items-center justify-between mb-3">
                                 <span class="text-xs font-bold text-blue-300">MIND</span>
-                                <span class="text-lg font-bold text-white">{mindScore}%</span>
+                                <span class="text-2xl font-bold text-white">{mindScore}<span class="text-sm text-blue-400">%</span></span>
                             </div>
-                            <div class="w-full h-32 relative">
-                                <Brain fillLevel={mindScore} />
+                            <div class="flex-1 flex items-center justify-center min-h-0">
+                                <div class="w-full h-full flex items-center justify-center">
+                                    <div class="w-full max-w-[160px] aspect-square">
+                                        <Brain fillLevel={mindScore} />
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mt-2 text-[10px] text-white/60">
+                            <div class="mt-3 text-[10px] text-white/60 text-center">
                                 Attention: {attention}%
                             </div>
                         </div>
@@ -252,7 +256,7 @@
                     <div 
                         role="button"
                         tabindex="0"
-                        class="relative bg-gradient-to-br from-green-950/40 to-emerald-950/40 rounded-2xl p-3 border border-green-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
+                        class="relative bg-gradient-to-br from-green-950/40 to-emerald-950/40 rounded-2xl p-4 border border-green-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
                         onclick={() => goto("/body")}
                         onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/body')}
                         class:translate-x-0={isVisible} 
@@ -261,14 +265,19 @@
                         class:opacity-0={!isVisible}
                     >
                         <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 to-transparent"></div>
-                        <div class="relative z-10">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-lg font-bold text-white">{bodyScore}%</span>
+                        <div class="relative z-10 h-full flex flex-col">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold text-green-300">BODY</span>
+                                <span class="text-2xl font-bold text-white">{bodyScore}<span class="text-sm text-green-400">%</span></span>
                             </div>
-                            <div class="w-full h-32 relative">
-                                <Body energy={energy} stamina={stamina} fillLevel={bodyScore} />
+                            <div class="flex-1 flex items-center justify-center min-h-0">
+                                <div class="w-full h-full flex items-center justify-center">
+                                    <div class="w-full max-w-[120px] h-full max-h-[180px]">
+                                        <Body energy={energy} stamina={stamina} fillLevel={bodyScore} />
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mt-2 text-[10px] text-white/60">
+                            <div class="mt-3 text-[10px] text-white/60 text-center">
                                 Energy: {energy}%
                             </div>
                         </div>
@@ -527,7 +536,7 @@
             </div>
 
             <!-- Grid de 3 columnas: Body | Performance Core | Mind -->
-            <div class="grid grid-cols-3 gap-4 mt-20">
+            <div class="grid grid-cols-3 gap-6 mt-20">
                 <!-- BODY - Izquierda -->
                 <div 
                     role="button"
@@ -540,34 +549,31 @@
                     class:opacity-100={isVisible} 
                     class:opacity-0={!isVisible}
                 >
-                    <div class="glass-card h-[600px] bg-gradient-to-br from-green-950/30 to-emerald-950/30 border-green-500/30 hover:border-green-400/60 hover:shadow-lg hover:shadow-green-500/20 transition-all duration-500 hover:scale-[1.02]">
+                    <div class="glass-card h-[700px] bg-gradient-to-br from-green-950/30 to-emerald-950/30 border-green-500/30 hover:border-green-400/60 hover:shadow-lg hover:shadow-green-500/20 transition-all duration-500 hover:scale-[1.02]">
                         <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 via-transparent to-transparent"></div>
                         <div class="relative z-10 h-full flex flex-col">
                             <!-- Header -->
-                            <div class="flex items-center justify-between p-4 border-b border-green-500/20">
+                            <div class="flex items-center justify-between p-6 border-b border-green-500/20">
                                 <div>
-                                    <div class="text-xs font-mono text-green-400">BODY SYSTEM</div>
-                                    <div class="text-4xl font-bold text-white mt-1">{bodyScore}<span class="text-lg text-green-400">%</span></div>
-                                </div>
-                                <div class="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center animate-pulse-glow">
-                                    <span class="text-3xl">💪</span>
+                                    <div class="text-sm font-mono text-green-400">BODY SYSTEM</div>
+                                    <div class="text-5xl font-bold text-white mt-1">{bodyScore}<span class="text-2xl text-green-400">%</span></div>
                                 </div>
                             </div>
                             <!-- Body Visual -->
-                            <div class="flex-1 flex items-center justify-center p-6 overflow-hidden">
-                                <div class="w-full h-full max-h-[450px] relative">
+                            <div class="flex-1 flex items-center justify-center px-6 py-8 overflow-hidden min-h-0">
+                                <div class="w-full max-w-xs mx-auto" style="aspect-ratio: 1/1.5;">
                                     <Body energy={energy} stamina={stamina} fillLevel={bodyScore} />
                                 </div>
                             </div>
                             <!-- Footer Stats -->
-                            <div class="grid grid-cols-2 gap-2 p-4 border-t border-green-500/20">
+                            <div class="grid grid-cols-2 gap-3 p-6 border-t border-green-500/20">
                                 <div class="text-center">
-                                    <div class="text-[10px] text-green-400/60 font-mono">ENERGY</div>
-                                    <div class="text-lg font-bold text-white">{energy}%</div>
+                                    <div class="text-xs text-green-400/60 font-mono">ENERGY</div>
+                                    <div class="text-2xl font-bold text-white">{energy}%</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-[10px] text-green-400/60 font-mono">TASKS</div>
-                                    <div class="text-lg font-bold text-white">{bodyTasks.length}</div>
+                                    <div class="text-xs text-green-400/60 font-mono">TASKS</div>
+                                    <div class="text-2xl font-bold text-white">{bodyTasks.length}</div>
                                 </div>
                             </div>
                         </div>
@@ -576,26 +582,26 @@
 
                 <!-- PERFORMANCE CORE - Centro -->
                 <div class="relative flex items-center justify-center">
-                    <div class="glass-card p-6 bg-gradient-to-br from-purple-950/20 to-blue-950/20 border-purple-500/30 hover:border-purple-400/60 transition-all duration-500 hover:scale-105">
+                    <div class="glass-card p-8 bg-gradient-to-br from-purple-950/20 to-blue-950/20 border-purple-500/30 hover:border-purple-400/60 transition-all duration-500 hover:scale-105">
                         <div class="relative transition-all duration-700" class:scale-100={isVisible} class:scale-0={!isVisible}>
                             <div class="absolute inset-0 animate-pulse-glow rounded-full"></div>
                             <ProgressRing
                                 progress={overallScore}
-                                size={200}
-                                strokeWidth={16}
+                                size={280}
+                                strokeWidth={20}
                                 label="CORE"
                                 sublabel={isLoadingStats ? "..." : `${overallScore}%`}
                             />
                             <!-- Indicadores alrededor -->
-                            <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-blue-500/20 backdrop-blur-sm border border-blue-400/30">
-                                <span class="text-xs font-bold text-blue-300">MIND: {mindScore}%</span>
+                            <div class="absolute -top-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-blue-500/20 backdrop-blur-sm border border-blue-400/30">
+                                <span class="text-sm font-bold text-blue-300">MIND: {mindScore}%</span>
                             </div>
-                            <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-400/30">
-                                <span class="text-xs font-bold text-green-300">BODY: {bodyScore}%</span>
+                            <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-400/30">
+                                <span class="text-sm font-bold text-green-300">BODY: {bodyScore}%</span>
                             </div>
                         </div>
-                        <div class="mt-6 text-center">
-                            <div class="text-[10px] text-white/40 font-mono">PERFORMANCE INDEX</div>
+                        <div class="mt-8 text-center">
+                            <div class="text-xs text-white/40 font-mono">PERFORMANCE INDEX</div>
                         </div>
                     </div>
                 </div>
@@ -612,34 +618,31 @@
                     class:opacity-100={isVisible} 
                     class:opacity-0={!isVisible}
                 >
-                    <div class="glass-card h-[600px] bg-gradient-to-br from-blue-950/30 to-purple-950/30 border-blue-500/30 hover:border-blue-400/60 hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-500 hover:scale-[1.02]">
+                    <div class="glass-card h-[700px] bg-gradient-to-br from-blue-950/30 to-purple-950/30 border-blue-500/30 hover:border-blue-400/60 hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-500 hover:scale-[1.02]">
                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/10 via-transparent to-transparent"></div>
                         <div class="relative z-10 h-full flex flex-col">
                             <!-- Header -->
-                            <div class="flex items-center justify-between p-4 border-b border-blue-500/20">
+                            <div class="flex items-center justify-between p-6 border-b border-blue-500/20">
                                 <div>
-                                    <div class="text-xs font-mono text-blue-400">MIND SYSTEM</div>
-                                    <div class="text-4xl font-bold text-white mt-1">{mindScore}<span class="text-lg text-blue-400">%</span></div>
-                                </div>
-                                <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse-glow">
-                                    <span class="text-3xl">🧠</span>
+                                    <div class="text-sm font-mono text-blue-400">MIND SYSTEM</div>
+                                    <div class="text-5xl font-bold text-white mt-1">{mindScore}<span class="text-2xl text-blue-400">%</span></div>
                                 </div>
                             </div>
                             <!-- Brain Visual -->
-                            <div class="flex-1 flex items-center justify-center p-6 overflow-hidden">
-                                <div class="w-full h-full max-h-[450px] relative">
+                            <div class="flex-1 flex items-center justify-center px-6 py-8 overflow-hidden min-h-0">
+                                <div class="w-full max-w-md mx-auto aspect-square">
                                     <Brain fillLevel={mindScore} />
                                 </div>
                             </div>
                             <!-- Footer Stats -->
-                            <div class="grid grid-cols-2 gap-2 p-4 border-t border-blue-500/20">
+                            <div class="grid grid-cols-2 gap-3 p-6 border-t border-blue-500/20">
                                 <div class="text-center">
-                                    <div class="text-[10px] text-blue-400/60 font-mono">ATTENTION</div>
-                                    <div class="text-lg font-bold text-white">{attention}%</div>
+                                    <div class="text-xs text-blue-400/60 font-mono">ATTENTION</div>
+                                    <div class="text-2xl font-bold text-white">{attention}%</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-[10px] text-blue-400/60 font-mono">TASKS</div>
-                                    <div class="text-lg font-bold text-white">{mindTasks.length}</div>
+                                    <div class="text-xs text-blue-400/60 font-mono">TASKS</div>
+                                    <div class="text-2xl font-bold text-white">{mindTasks.length}</div>
                                 </div>
                             </div>
                         </div>

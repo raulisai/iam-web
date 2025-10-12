@@ -21,20 +21,6 @@ $: backgroundMargin = width ? (width - backgroundWidth) / 2 : 0;
     ></div>
     
     <img src={image} alt="Body Status" class="body-image" />
-    
-    <!-- Indicadores sobre la imagen -->
-    <div class="absolute top-2 left-2 z-10">
-        <div class="bg-neutral-900/80 backdrop-blur rounded-lg px-2 py-1">
-            <div class="text-[10px] text-emerald-400 font-bold">Energy</div>
-            <div class="text-lg font-bold text-white">{energy}%</div>
-        </div>
-    </div>
-    <div class="absolute bottom-2 right-2 z-10">
-        <div class="bg-neutral-900/80 backdrop-blur rounded-lg px-2 py-1">
-            <div class="text-[10px] text-blue-400 font-bold">Stamina</div>
-            <div class="text-lg font-bold text-white">{stamina}%</div>
-        </div>
-    </div>
 </div>
 
 <style>

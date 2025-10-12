@@ -10,8 +10,8 @@
     import { getAuthContext } from "$lib/stores/auth.svelte";
     import { getLatestSnapshot, getStatsSummary, type PerformanceSnapshot, type StatsSummary } from "$lib/services/stats";
     import { getMindTasks, getBodyTasks } from "$lib/services/tasks";
-    import { fetchGoals } from "$lib/services/goals";
-    import type { Task, Goal } from "$lib/types";
+    import { fetchGoals, type Goal } from "$lib/services/goals";
+    import type { Task } from "$lib/types";
 
     // Dashboard data
     let overallScore = $state(0);
@@ -181,12 +181,23 @@
                         {/if}
                     </p>
                 </div>
-                <button
-                    onclick={() => goto("/profile")}
-                    class="w-10 h-10 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-all duration-300 hover:scale-110"
-                >
-                    <span class="text-lg">👤</span>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        onclick={() => goto("/onboarding")}
+                        class="px-3 h-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 border border-purple-400/30 flex items-center justify-center gap-2 hover:from-purple-500 hover:to-blue-500 transition-all duration-300 hover:scale-105"
+                        title="Recalibrar Perfil"
+                    >
+                        <span class="text-sm">🎯</span>
+                        <span class="text-xs font-semibold text-white">Setup</span>
+                    </button>
+                    <button
+                        onclick={() => goto("/profile")}
+                        class="w-10 h-10 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-all duration-300 hover:scale-110"
+                        title="Mi Perfil"
+                    >
+                        <span class="text-lg">👤</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -237,7 +248,6 @@
                         <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 to-transparent"></div>
                         <div class="relative z-10">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-bold text-green-300">BODY</span>
                                 <span class="text-lg font-bold text-white">{bodyScore}%</span>
                             </div>
                             <div class="w-full h-32 relative">
@@ -429,6 +439,14 @@
                 </p>
             </div>
             <div class="flex items-center gap-3">
+                <button
+                    onclick={() => goto("/onboarding")}
+                    class="px-4 h-12 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 border border-purple-400/30 flex items-center justify-center gap-2 hover:from-purple-500 hover:to-blue-500 transition-all duration-300 hover:scale-105 shadow-lg shadow-purple-500/20"
+                    title="Recalibrar Perfil / Setup Inicial"
+                >
+                    <span class="text-lg">🎯</span>
+                    <span class="text-sm font-semibold text-white">Recalibrar</span>
+                </button>
                 <button
                     onclick={() => goto("/profile")}
                     class="w-12 h-12 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-all duration-300 hover:scale-110"

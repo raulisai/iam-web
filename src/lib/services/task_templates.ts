@@ -1,5 +1,4 @@
 import { apiCall } from '$lib/config';
-import type { AuthStore } from '$lib/types';
 
 export interface TaskTemplate {
 	id?: string;
@@ -31,7 +30,7 @@ export interface CreateTaskTemplateData {
 /**
  * Get all task templates
  */
-export async function getTaskTemplates(authStore: AuthStore): Promise<TaskTemplate[]> {
+export async function getTaskTemplates(authStore: any): Promise<TaskTemplate[]> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -60,7 +59,7 @@ export async function getTaskTemplates(authStore: AuthStore): Promise<TaskTempla
 /**
  * Get task template by ID
  */
-export async function getTaskTemplate(authStore: AuthStore, templateId: string): Promise<TaskTemplate | null> {
+export async function getTaskTemplate(authStore: any, templateId: string): Promise<TaskTemplate | null> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -89,7 +88,7 @@ export async function getTaskTemplate(authStore: AuthStore, templateId: string):
 /**
  * Get task template by key
  */
-export async function getTaskTemplateByKey(authStore: AuthStore, key: string): Promise<TaskTemplate | null> {
+export async function getTaskTemplateByKey(authStore: any, key: string): Promise<TaskTemplate | null> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -118,7 +117,7 @@ export async function getTaskTemplateByKey(authStore: AuthStore, key: string): P
 /**
  * Get task templates by category
  */
-export async function getTaskTemplatesByCategory(authStore: AuthStore, category: 'mind' | 'body'): Promise<TaskTemplate[]> {
+export async function getTaskTemplatesByCategory(authStore: any, category: 'mind' | 'body'): Promise<TaskTemplate[]> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -147,7 +146,7 @@ export async function getTaskTemplatesByCategory(authStore: AuthStore, category:
 /**
  * Create new task template
  */
-export async function createTaskTemplate(authStore: AuthStore, templateData: CreateTaskTemplateData): Promise<TaskTemplate | null> {
+export async function createTaskTemplate(authStore: any, templateData: CreateTaskTemplateData): Promise<TaskTemplate | null> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -178,7 +177,7 @@ export async function createTaskTemplate(authStore: AuthStore, templateData: Cre
 /**
  * Update task template
  */
-export async function updateTaskTemplate(authStore: AuthStore, templateId: string, updates: Partial<TaskTemplate>): Promise<TaskTemplate | null> {
+export async function updateTaskTemplate(authStore: any, templateId: string, updates: Partial<TaskTemplate>): Promise<TaskTemplate | null> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -209,7 +208,7 @@ export async function updateTaskTemplate(authStore: AuthStore, templateId: strin
 /**
  * Delete task template
  */
-export async function deleteTaskTemplate(authStore: AuthStore, templateId: string): Promise<boolean> {
+export async function deleteTaskTemplate(authStore: any, templateId: string): Promise<boolean> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {

@@ -129,7 +129,11 @@
 		
 		try {
 			// 1. Create or update profile (auto-detects)
-			await saveOrUpdateUserProfile(profileData);
+			await saveOrUpdateUserProfile({
+				...profileData,
+				weight_kg: profileData.weight_kg ?? undefined,
+				height_cm: profileData.height_cm ?? undefined
+			});
 			
 			// 2. Generate and create bot rules
 			// Transform time IDs to schedule objects
@@ -161,7 +165,7 @@
 			const botRules = generateBotRules(selectedActivityObjects, selectedSchedules, selectedDays);
 			
 			for (const ruleData of botRules) {
-				await createBotRule(ruleData);
+				await createBotRule(authStore, ruleData);
 			}
 			
 			// 3. Create selected templates
@@ -170,19 +174,19 @@
 			);
 			
 			for (const template of selectedTemplateData) {
-				await createTaskTemplate(template);
+				await createTaskTemplate(authStore, template);
 			}
 			
 			// 4. Create custom tasks
 			for (const task of customTasks) {
-				await createTaskTemplate({
+				await createTaskTemplate(authStore, {
+					key: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
 					name: task.name,
-					description: task.description || '',
+					descr: task.description || '',
 					category: task.category,
-					duration: task.duration,
+					estimated_minutes: task.duration,
 					difficulty: task.difficulty,
-					icon: task.icon || (task.category === 'mind' ? '🧠' : '💪'),
-					template_key: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+					reward_xp: task.difficulty * 10
 				});
 			}
 			

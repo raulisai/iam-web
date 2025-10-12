@@ -15,6 +15,8 @@ export type Goal = {
 	start_date: string;
 	end_date?: string;
 	is_active: boolean;
+	user_id?: string;
+	created_at?: string;
 	// ...other properties if any
 };
 

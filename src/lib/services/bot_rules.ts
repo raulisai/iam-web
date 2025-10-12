@@ -1,5 +1,4 @@
 import { apiCall } from '$lib/config';
-import type { AuthStore } from '$lib/types';
 
 export interface BotRule {
 	id?: string;
@@ -25,7 +24,7 @@ export interface CreateBotRuleData {
 /**
  * Get all bot rules for authenticated user
  */
-export async function getBotRules(authStore: AuthStore, activeOnly?: boolean): Promise<BotRule[]> {
+export async function getBotRules(authStore: any, activeOnly?: boolean): Promise<BotRule[]> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -55,7 +54,7 @@ export async function getBotRules(authStore: AuthStore, activeOnly?: boolean): P
 /**
  * Get specific bot rule by ID
  */
-export async function getBotRule(authStore: AuthStore, ruleId: string): Promise<BotRule | null> {
+export async function getBotRule(authStore: any, ruleId: string): Promise<BotRule | null> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -84,7 +83,7 @@ export async function getBotRule(authStore: AuthStore, ruleId: string): Promise<
 /**
  * Create new bot rule
  */
-export async function createBotRule(authStore: AuthStore, ruleData: CreateBotRuleData): Promise<BotRule | null> {
+export async function createBotRule(authStore: any, ruleData: CreateBotRuleData): Promise<BotRule | null> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -115,7 +114,7 @@ export async function createBotRule(authStore: AuthStore, ruleData: CreateBotRul
 /**
  * Update bot rule
  */
-export async function updateBotRule(authStore: AuthStore, ruleId: string, updates: Partial<BotRule>): Promise<BotRule | null> {
+export async function updateBotRule(authStore: any, ruleId: string, updates: Partial<BotRule>): Promise<BotRule | null> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {
@@ -146,7 +145,7 @@ export async function updateBotRule(authStore: AuthStore, ruleId: string, update
 /**
  * Delete bot rule
  */
-export async function deleteBotRule(authStore: AuthStore, ruleId: string): Promise<boolean> {
+export async function deleteBotRule(authStore: any, ruleId: string): Promise<boolean> {
 	try {
 		const token = authStore.getToken();
 		if (!token) {

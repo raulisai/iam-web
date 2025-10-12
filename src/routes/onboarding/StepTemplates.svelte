@@ -12,15 +12,15 @@
 	let { recommendedTemplates, selectedTemplateIds = $bindable(), onNext, onBack }: Props = $props();
 	
 	function toggleTemplate(id: string) {
-		console.log('🔄 Toggle template:', id, 'Current selection:', selectedTemplateIds);
+		console.log('🔄 Toggle template:', id, 'Current selection:', $state.snapshot(selectedTemplateIds));
 		if (selectedTemplateIds.includes(id)) {
 			// Remove this template
 			selectedTemplateIds = selectedTemplateIds.filter(templateId => templateId !== id);
-			console.log('➖ Removed. New selection:', selectedTemplateIds);
+			console.log('➖ Removed. New selection:', $state.snapshot(selectedTemplateIds));
 		} else {
 			// Add this template
 			selectedTemplateIds = [...selectedTemplateIds, id];
-			console.log('➕ Added. New selection:', selectedTemplateIds);
+			console.log('➕ Added. New selection:', $state.snapshot(selectedTemplateIds));
 		}
 	}
 	

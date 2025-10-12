@@ -16,10 +16,11 @@
 	interface Props {
 		token: string;
 		onTaskClick?: (task: TaskNow) => void;
+		onTaskComplete?: (task: TaskNow) => void;
 		carouselHeight?: string;
 	}
 	
-	let { token, onTaskClick, carouselHeight = '400px' }: Props = $props();
+	let { token, onTaskClick, onTaskComplete, carouselHeight = '100px' }: Props = $props();
 
 	// State
 	let loading = $state(true);
@@ -62,6 +63,28 @@
 		selectedTaskId = task.id;
 		if (onTaskClick) {
 			onTaskClick(task);
+		}
+	}
+
+	async function handleTaskComplete(task: TaskNow, event: Event) {
+		event.stopPropagation(); // Prevent triggering task click
+		
+		// TODO: Call completion API here when provided
+		console.log('Completing task:', task.id);
+		
+		if (onTaskComplete) {
+			onTaskComplete(task);
+		}
+		
+		// Optimistically remove from UI
+		if (data) {
+			if (task.type === 'goal') {
+				data.goal_tasks = data.goal_tasks.filter(t => t.id !== task.id);
+			} else if (task.type === 'mind') {
+				data.mind_tasks = data.mind_tasks.filter(t => t.id !== task.id);
+			} else if (task.type === 'body') {
+				data.body_tasks = data.body_tasks.filter(t => t.id !== task.id);
+			}
 		}
 	}
 
@@ -217,11 +240,11 @@
 			{#if canScrollLeft}
 				<button
 					onclick={() => scroll('left')}
-					class="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-neutral-800/90 backdrop-blur-sm border border-neutral-700 flex items-center justify-center text-white shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hover:bg-neutral-700"
+					class="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-neutral-800/90 backdrop-blur-sm border border-neutral-700 flex items-center justify-center text-white shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hover:bg-neutral-700"
 					aria-label="Scroll left"
 					transition:fade
 				>
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
 					</svg>
 				</button>
@@ -231,11 +254,11 @@
 			{#if canScrollRight}
 				<button
 					onclick={() => scroll('right')}
-					class="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-neutral-800/90 backdrop-blur-sm border border-neutral-700 flex items-center justify-center text-white shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hover:bg-neutral-700"
+					class="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-neutral-800/90 backdrop-blur-sm border border-neutral-700 flex items-center justify-center text-white shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hover:bg-neutral-700"
 					aria-label="Scroll right"
 					transition:fade
 				>
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
 					</svg>
 				</button>
@@ -245,17 +268,25 @@
 			<div 
 				bind:this={scrollContainer}
 				onscroll={updateScrollButtons}
-				class="flex gap-4 overflow-x-auto h-full px-2 py-2 scroll-smooth snap-x snap-mandatory hide-scrollbar"
+				class="flex gap-2 overflow-x-auto h-full px-2 py-2 scroll-smooth snap-x snap-mandatory hide-scrollbar"
 				style="scrollbar-width: none; -ms-overflow-style: none;"
 			>
 				{#each allTasks() as task, index (task.id)}
 					<div 
-						class="flex-shrink-0 w-80 sm:w-96 snap-start"
+						class="flex-shrink-0 w-80 h-52 sm:w-96 sm:h-64 snap-start"
 						transition:fly={{ x: 50, delay: index * 50, duration: 400 }}
 					>
-						<button
+						<div
 							onclick={() => handleTaskClick(task)}
-							class="w-full h-full rounded-xl border-2 transition-all p-6 text-left relative overflow-hidden group/card {selectedTaskId === task.id 
+							role="button"
+							tabindex="0"
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									handleTaskClick(task);
+								}
+							}}
+							class="w-full h-full rounded-lg border-2 transition-all p-3 text-left relative overflow-hidden group/card cursor-pointer {selectedTaskId === task.id 
 								? `border-${getTaskTypeColor(task.type)}-500 bg-${getTaskTypeColor(task.type)}-500/10 scale-105 shadow-2xl shadow-${getTaskTypeColor(task.type)}-500/20` 
 								: 'border-neutral-700 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:border-neutral-600 hover:scale-[1.02] hover:shadow-xl'}"
 						>
@@ -265,63 +296,77 @@
 							</div>
 
 							<div class="relative z-10">
-								<!-- Header -->
-								<div class="flex items-start justify-between mb-4">
-									<div class="flex items-center gap-3">
-										<span class="text-4xl">{getTaskTypeIcon(task.type)}</span>
+								<!-- Header con botón de completado -->
+								<div class="flex items-start justify-between mb-2">
+									<div class="flex items-center gap-2">
+										<span class="text-xl">{getTaskTypeIcon(task.type)}</span>
 										<div>
-											<div class="text-xs font-semibold uppercase tracking-wider text-{getTaskTypeColor(task.type)}-400 mb-1">
+											<div class="text-xs font-semibold uppercase tracking-wider text-{getTaskTypeColor(task.type)}-400">
 												{getTaskTypeLabel(task.type)}
 											</div>
-											<div class="text-sm text-neutral-400">
-												{formatTime(task.start_time)} - {formatTime(task.end_time)}
+											<div class="text-xs text-neutral-400">
+												{formatTime(task.start_time)}
 											</div>
+										</div>
 									</div>
+									
+									<!-- Botón de completado -->
+									<button
+										onclick={(e) => handleTaskComplete(task, e)}
+										class="w-10 h-10 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 flex items-center justify-center text-emerald-400 hover:text-white transition-all group/complete hover:scale-110 shadow-lg hover:shadow-emerald-500/25"
+										aria-label="Mark task as complete"
+										title="Marcar como completada"
+									>
+										<svg class="w-5 h-5 group-hover/complete:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+										</svg>
+									</button>
 								</div>
+								
 								{#if getUrgencyBadge(task)}
 									{@const badge = getUrgencyBadge(task)}
 									{#if badge}
-										<span class="px-2 py-1 rounded-full text-xs font-semibold border {badge.color}">
+										<span class="px-2 py-0.5 rounded-full text-xs font-semibold border {badge.color} mb-1 inline-block">
 											{badge.text}
 										</span>
 									{/if}
 								{/if}
-							</div>								<!-- Título -->
-								<h3 class="text-xl font-bold text-white mb-3 line-clamp-2 group-hover/card:text-{getTaskTypeColor(task.type)}-400 transition-colors">
+								
+								<!-- Título -->
+								<h3 class="text-base font-bold text-white mb-1 line-clamp-2 group-hover/card:text-{getTaskTypeColor(task.type)}-400 transition-colors">
 									{task.title}
 								</h3>
 
-								<!-- Descripción -->
+								<!-- Descripción compacta -->
 								{#if task.description}
-									<p class="text-sm text-neutral-400 mb-4 line-clamp-3">
+									<p class="text-xs text-neutral-400 mb-2 line-clamp-1">
 										{task.description}
 									</p>
 								{/if}
 
-								<!-- Metadata -->
-								<div class="space-y-2 mb-4">
-								<div class="flex items-center gap-2 text-sm">
-									<span class="text-neutral-500">⏱️</span>
-									<span class="text-neutral-300">{formatDuration(task.estimated_duration_minutes)} minutos</span>
-								</div>
+								<!-- Metadata compacta -->
+								<div class="space-y-0.5 mb-2">
+									<div class="flex items-center gap-2 text-xs">
+										<span class="text-neutral-500">⏱️</span>
+										<span class="text-neutral-300">{formatDuration(task.estimated_duration_minutes)}m</span>
+									</div>
 									{#if task.type === 'goal' && task.goal_title}
-										<div class="flex items-center gap-2 text-sm">
+										<div class="flex items-center gap-2 text-xs">
 											<span class="text-neutral-500">🎯</span>
 											<span class="text-neutral-300 truncate">{task.goal_title}</span>
 										</div>
 									{/if}
-
 								</div>
 
-								<!-- Footer - Prioridad -->
-								<div class="flex items-center justify-between pt-4 border-t border-neutral-700/50">
-								<div class="flex items-center gap-2">
-									<span class="text-xs text-neutral-500">Prioridad</span>
-									<div class="flex gap-1">
-										{#each Array(3) as _, i}
-											<div class="w-2 h-2 rounded-full {i < Math.floor(task.priority_score / 33) ? `bg-${getTaskTypeColor(task.type)}-400` : 'bg-neutral-700'}"></div>
-										{/each}
-									</div>
+								<!-- Footer compacto -->
+								<div class="flex items-center justify-between pt-1.5 border-t border-neutral-700/50">
+									<div class="flex items-center gap-2">
+										<span class="text-xs text-neutral-500">Prioridad</span>
+										<div class="flex gap-1">
+											{#each Array(3) as _, i}
+												<div class="w-1.5 h-1.5 rounded-full {i < Math.floor(task.priority_score / 33) ? `bg-${getTaskTypeColor(task.type)}-400` : 'bg-neutral-700'}"></div>
+											{/each}
+										</div>
 									</div>
 									<div class="text-xs text-neutral-500">
 										#{index + 1}
@@ -331,14 +376,14 @@
 								<!-- Hover effect indicator -->
 								<div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-{getTaskTypeColor(task.type)}-500 to-{getTaskTypeColor(task.type)}-400 transform scale-x-0 group-hover/card:scale-x-100 transition-transform origin-left"></div>
 							</div>
-						</button>
+						</div>
 					</div>
 				{/each}
 			</div>
 		</div>
 
 		<!-- Indicadores de scroll (mobile) -->
-		<div class="flex justify-center gap-2 mt-4 sm:hidden">
+		<div class="flex justify-center gap-1 mt-2 sm:hidden">
 			{#each allTasks() as _, i}
 				<button
 					onclick={() => {
@@ -349,7 +394,7 @@
 							});
 						}
 					}}
-					class="w-2 h-2 rounded-full transition-all {Math.floor(scrollContainer?.scrollLeft / (scrollContainer?.offsetWidth * 0.9)) === i ? 'bg-emerald-500 w-6' : 'bg-neutral-600'}"
+					class="w-1.5 h-1.5 rounded-full transition-all {Math.floor(scrollContainer?.scrollLeft / (scrollContainer?.offsetWidth * 0.9)) === i ? 'bg-emerald-500 w-4' : 'bg-neutral-600'}"
 					aria-label="Scroll to task {i + 1}"
 				></button>
 			{/each}

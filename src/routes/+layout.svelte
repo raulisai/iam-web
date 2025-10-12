@@ -22,9 +22,7 @@
 	}
 	
 	// Hacer el store disponible para todos los componentes hijos
-	if (browser) {
-		setAuthContext(authStore);
-	}
+	setAuthContext(authStore);
 	
 	// Verificar si estamos en una página pública y redirigir si no hay sesión
 	$effect(() => {

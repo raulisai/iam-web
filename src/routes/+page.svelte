@@ -7,6 +7,7 @@
     import HealthBar from "../lib/components/HealthBar.svelte";
     import Brain from "../routes/minde/Brain.svelte";
     import Body from "../routes/body/Body.svelte";
+    import TasksNowCarousel from "../lib/components/TasksNowCarousel.svelte";
     import { getAuthContext } from "$lib/stores/auth.svelte";
     import { getLatestSnapshot, getStatsSummary, type PerformanceSnapshot, type StatsSummary } from "$lib/services/stats";
     import { getMindTasks, getBodyTasks } from "$lib/services/tasks";
@@ -203,6 +204,20 @@
 
         <!-- Contenido scrolleable -->
         <div class="flex-1 overflow-y-auto">
+            <!-- Tasks Now Carousel - Mobile -->
+            <div class="px-4 py-4">
+                <TasksNowCarousel 
+                    token={getAuthContext().getToken() ?? ''} 
+                    carouselHeight="350px"
+                    onTaskClick={(task) => {
+                        // Redirigir según el tipo de tarea
+                        if (task.type === 'goal') goto(`/goals/${task.task_id}`);
+                        else if (task.type === 'mind') goto('/minde');
+                        else if (task.type === 'body') goto('/body');
+                    }}
+                />
+            </div>
+
             <!-- Mind & Body Visualization -->
             <div class="px-4 py-4">
                 <div class="grid grid-cols-2 gap-3 mb-4">
@@ -455,6 +470,20 @@
                     <span class="text-xl">👤</span>
                 </button>
             </div>
+        </div>
+
+        <!-- Tasks Now Carousel - Desktop -->
+        <div class="mb-8">
+            <TasksNowCarousel 
+                token={getAuthContext().getToken() ?? ''} 
+                carouselHeight="420px"
+                onTaskClick={(task) => {
+                    // Redirigir según el tipo de tarea
+                    if (task.type === 'goal') goto(`/goals/${task.task_id}`);
+                    else if (task.type === 'mind') goto('/minde');
+                    else if (task.type === 'body') goto('/body');
+                }}
+            />
         </div>
 
         <!-- Main Grid Layout -->

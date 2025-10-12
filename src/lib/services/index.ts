@@ -10,6 +10,7 @@ export * from './tasks_mind';
 export * from './tasks_body';
 export * from './tasks_common';
 export * from './recommendations';
+export * from './time-optimizer';
 
 // Other Services
 export * from './goals';

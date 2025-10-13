@@ -208,7 +208,7 @@
             <div class="px-4 py-4">
                 <TasksNowCarousel 
                     token={getAuthContext().getToken() ?? ''} 
-                    carouselHeight="150px"
+                    carouselHeight="180px"
                     onTaskClick={(task) => {
                         // Redirigir según el tipo de tarea
                         if (task.type === 'goal') goto(`/goals/${task.task_id}`);

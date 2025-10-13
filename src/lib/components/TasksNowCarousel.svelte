@@ -125,22 +125,22 @@
 
 <div class="w-full">
 	<!-- Header con estadísticas -->
-	<div class="mb-6">
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+	<div class="mb-4 sm:mb-6">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
 			<div>
-				<h2 class="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-					<span class="text-3xl sm:text-4xl">⚡</span>
+				<h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white flex items-center gap-2 sm:gap-3">
+					<span class="text-2xl sm:text-3xl md:text-4xl">⚡</span>
 					<span>Tareas para Ahora</span>
 				</h2>
 			</div>
 			<button
 				onclick={loadTasks}
 				disabled={loading}
-				class="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+				class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
 				aria-label="Refresh tasks"
 			>
 				<svg 
-					class="w-5 h-5 transition-transform group-hover:rotate-180 {loading ? 'animate-spin' : ''}"
+					class="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-180 {loading ? 'animate-spin' : ''}"
 					viewBox="0 0 24 24" 
 					fill="none" 
 					stroke="currentColor" 
@@ -154,43 +154,43 @@
 
 		{#if data && !loading}
 			<!-- Stats compactas -->
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4" transition:fade>
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-3 border border-neutral-700">
-					<div class="flex items-center gap-2 mb-1">
-						<span class="text-2xl">📊</span>
-						<span class="text-xs text-neutral-400">Utilización</span>
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4" transition:fade>
+				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
+					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+						<span class="text-lg sm:text-2xl">📊</span>
+						<span class="text-[10px] sm:text-xs text-neutral-400">Utilización</span>
 					</div>
-					<div class="text-xl font-bold {getUtilizationColor(data.utilization_percentage)}">
+					<div class="text-base sm:text-xl font-bold {getUtilizationColor(data.utilization_percentage)}">
 						{data.utilization_percentage.toFixed(0)}%
 					</div>
 				</div>
 
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-3 border border-neutral-700">
-					<div class="flex items-center gap-2 mb-1">
-						<span class="text-2xl">🎯</span>
-						<span class="text-xs text-neutral-400">Objetivos</span>
+				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
+					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+						<span class="text-lg sm:text-2xl">🎯</span>
+						<span class="text-[10px] sm:text-xs text-neutral-400">Objetivos</span>
 					</div>
-					<div class="text-xl font-bold text-blue-400">
+					<div class="text-base sm:text-xl font-bold text-blue-400">
 						{data.goal_tasks.length}
 					</div>
 				</div>
 
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-3 border border-neutral-700">
-					<div class="flex items-center gap-2 mb-1">
-						<span class="text-2xl">🧠</span>
-						<span class="text-xs text-neutral-400">Desarrollo</span>
+				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
+					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+						<span class="text-lg sm:text-2xl">🧠</span>
+						<span class="text-[10px] sm:text-xs text-neutral-400">Desarrollo</span>
 					</div>
-					<div class="text-xl font-bold text-purple-400">
+					<div class="text-base sm:text-xl font-bold text-purple-400">
 						{data.mind_tasks.length}
 					</div>
 				</div>
 
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-3 border border-neutral-700">
-					<div class="flex items-center gap-2 mb-1">
-						<span class="text-2xl">💪</span>
-						<span class="text-xs text-neutral-400">Bienestar</span>
+				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
+					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+						<span class="text-lg sm:text-2xl">💪</span>
+						<span class="text-[10px] sm:text-xs text-neutral-400">Bienestar</span>
 					</div>
-					<div class="text-xl font-bold text-emerald-400">
+					<div class="text-base sm:text-xl font-bold text-emerald-400">
 						{data.body_tasks.length}
 					</div>
 				</div>
@@ -272,7 +272,7 @@
 			>
 				{#each allTasks() as task, index (task.id)}
 					<div 
-						class="flex-shrink-0 w-60 h-40 sm:w-80 sm:h-48 snap-start"
+						class="flex-shrink-0 w-52 h-36 sm:w-64 sm:h-40 md:w-72 md:h-44 snap-start"
 						transition:fly={{ x: 50, delay: index * 50, duration: 400 }}
 					>
 						<div
@@ -285,7 +285,7 @@
 									handleTaskClick(task);
 								}
 							}}
-							class="w-full h-full rounded-lg border-2 transition-all p-3 text-left relative overflow-hidden group/card cursor-pointer {selectedTaskId === task.id 
+							class="w-full h-full rounded-lg border-2 transition-all p-2 sm:p-3 text-left relative overflow-hidden group/card cursor-pointer {selectedTaskId === task.id 
 								? `border-${getTaskTypeColor(task.type)}-500 bg-${getTaskTypeColor(task.type)}-500/10 scale-105 shadow-2xl shadow-${getTaskTypeColor(task.type)}-500/20` 
 								: 'border-neutral-700 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:border-neutral-600 hover:scale-[1.02] hover:shadow-xl'}"
 						>
@@ -296,14 +296,14 @@
 
 							<div class="relative z-10">
 								<!-- Header con botón de completado -->
-								<div class="flex items-start justify-between mb-2">
-									<div class="flex items-center gap-2">
-										<span class="text-xl">{getTaskTypeIcon(task.type)}</span>
+								<div class="flex items-start justify-between mb-1.5">
+									<div class="flex items-center gap-1.5">
+										<span class="text-lg sm:text-xl">{getTaskTypeIcon(task.type)}</span>
 										<div>
-											<div class="text-xs font-semibold uppercase tracking-wider text-{getTaskTypeColor(task.type)}-400">
+											<div class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-{getTaskTypeColor(task.type)}-400">
 												{getTaskTypeLabel(task.type)}
 											</div>
-											<div class="text-xs text-neutral-400">
+											<div class="text-[10px] sm:text-xs text-neutral-400">
 												{formatTime(task.start_time)}
 											</div>
 										</div>
@@ -312,11 +312,11 @@
 									<!-- Botón de completado -->
 									<button
 										onclick={(e) => handleTaskComplete(task, e)}
-										class="w-10 h-10 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 flex items-center justify-center text-emerald-400 hover:text-white transition-all group/complete hover:scale-110 shadow-lg hover:shadow-emerald-500/25"
+										class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 flex items-center justify-center text-emerald-400 hover:text-white transition-all group/complete hover:scale-110 shadow-lg hover:shadow-emerald-500/25"
 										aria-label="Mark task as complete"
 										title="Marcar como completada"
 									>
-										<svg class="w-5 h-5 group-hover/complete:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<svg class="w-4 h-4 sm:w-5 sm:h-5 group-hover/complete:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
 										</svg>
 									</button>
@@ -325,57 +325,56 @@
 								{#if getUrgencyBadge(task)}
 									{@const badge = getUrgencyBadge(task)}
 									{#if badge}
-										<span class="px-2 py-0.5 rounded-full text-xs font-semibold border {badge.color} mb-1 inline-block">
+										<span class="px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold border {badge.color} mb-1 inline-block">
 											{badge.text}
 										</span>
 									{/if}
 								{/if}
 								
 								<!-- Título -->
-								<h3 class="text-base font-bold text-white mb-1 line-clamp-2 group-hover/card:text-{getTaskTypeColor(task.type)}-400 transition-colors">
+								<h3 class="text-sm sm:text-base font-bold text-white mb-0.5 sm:mb-1 line-clamp-2 group-hover/card:text-{getTaskTypeColor(task.type)}-400 transition-colors">
 									{task.title}
 								</h3>
 
 								<!-- Descripción compacta -->
 								{#if task.description}
-									<p class="text-xs text-neutral-400 mb-2 line-clamp-1">
+									<p class="text-[10px] sm:text-xs text-neutral-400 mb-1 sm:mb-1.5 line-clamp-1">
 										{task.description}
 									</p>
 								{/if}
 
 								<!-- Metadata compacta -->
-								<div class="space-y-0.5 mb-2">
-									<div class="flex items-center gap-2 text-xs">
+								<div class="space-y-0.5 mb-1.5">
+									<div class="flex items-center gap-1.5 text-[10px] sm:text-xs">
 										<span class="text-neutral-500">⏱️</span>
 										<span class="text-neutral-300">{formatDuration(task.estimated_duration_minutes)}m</span>
 									</div>
 									{#if task.type === 'goal' && task.goal_title}
-										<div class="flex items-center gap-2 text-xs">
+										<div class="flex items-center gap-1.5 text-[10px] sm:text-xs">
 											<span class="text-neutral-500">🎯</span>
 											<span class="text-neutral-300 truncate">{task.goal_title}</span>
 										</div>
 									{/if}
 								</div>
-
 								<!-- Footer compacto -->
-								<div class="flex items-center justify-between pt-1.5 border-t border-neutral-700/50">
-									<div class="flex items-center gap-2">
-										<span class="text-xs text-neutral-500">Prioridad</span>
-										<div class="flex gap-1">
+								<div class="flex items-center justify-between pt-1 border-t border-neutral-700/50">
+									<div class="flex items-center gap-1.5">
+										<span class="text-[10px] sm:text-xs text-neutral-500">Prioridad</span>
+										<div class="flex gap-0.5 sm:gap-1">
 											{#each Array(3) as _, i}
-												<div class="w-1.5 h-1.5 rounded-full {i < Math.floor(task.priority_score / 33) ? `bg-${getTaskTypeColor(task.type)}-400` : 'bg-neutral-700'}"></div>
+												<div class="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full {i < Math.floor(task.priority_score / 33) ? `bg-${getTaskTypeColor(task.type)}-400` : 'bg-neutral-700'}"></div>
 											{/each}
 										</div>
 									</div>
-									<div class="text-xs text-neutral-500">
+									<div class="text-[10px] sm:text-xs text-neutral-500">
 										#{index + 1}
 									</div>
 								</div>
 
 								<!-- Hover effect indicator -->
 								<div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-{getTaskTypeColor(task.type)}-500 to-{getTaskTypeColor(task.type)}-400 transform scale-x-0 group-hover/card:scale-x-100 transition-transform origin-left"></div>
+								</div>
 							</div>
-						</div>
 					</div>
 				{/each}
 			</div>

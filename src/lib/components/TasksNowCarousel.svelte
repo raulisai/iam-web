@@ -132,7 +132,6 @@
 					<span class="text-3xl sm:text-4xl">⚡</span>
 					<span>Tareas para Ahora</span>
 				</h2>
-				<p class="text-sm text-neutral-400 mt-1">Horario optimizado para tu tiempo disponible hoy</p>
 			</div>
 			<button
 				onclick={loadTasks}
@@ -273,7 +272,7 @@
 			>
 				{#each allTasks() as task, index (task.id)}
 					<div 
-						class="flex-shrink-0 w-80 h-52 sm:w-96 sm:h-64 snap-start"
+						class="flex-shrink-0 w-60 h-40 sm:w-80 sm:h-48 snap-start"
 						transition:fly={{ x: 50, delay: index * 50, duration: 400 }}
 					>
 						<div

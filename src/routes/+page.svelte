@@ -220,69 +220,72 @@
 
             <!-- Mind & Body Visualization -->
             <div class="px-4 py-4">
-                <div class="grid grid-cols-2 gap-3 mb-4" style="height: 280px;">
-                    <!-- Mind Component -->
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        class="relative bg-gradient-to-br from-blue-950/40 to-purple-950/40 rounded-2xl p-4 border border-blue-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
-                        onclick={() => goto("/minde")}
-                        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/minde')}
-                        class:translate-x-0={isVisible} 
-                        class:-translate-x-full={!isVisible}
-                        class:opacity-100={isVisible} 
-                        class:opacity-0={!isVisible}
-                    >
-                        <div class="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent"></div>
-                        <div class="relative z-10 h-full flex flex-col">
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="text-xs font-bold text-blue-300">MIND</span>
-                                <span class="text-2xl font-bold text-white">{mindScore}<span class="text-sm text-blue-400">%</span></span>
-                            </div>
-                            <div class="flex-1 flex items-center justify-center min-h-0">
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <div class="w-full max-w-[160px] aspect-square">
+                <!-- Responsive height: small devices shorter, larger on sm/md -->
+                <div class="grid grid-cols-2 gap-3 mb-4 h-[280px] sm:h-[340px] md:h-[380px] lg:h-[460px] w-full">
+                     <!-- Mind Component -->
+                     <div 
+                         role="button"
+                         tabindex="0"
+                         class="relative bg-gradient-to-br from-blue-950/40 to-purple-950/40 rounded-2xl p-4 border border-blue-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
+                         onclick={() => goto("/minde")}
+                         onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/minde')}
+                         class:translate-x-0={isVisible} 
+                         class:-translate-x-full={!isVisible}
+                         class:opacity-100={isVisible} 
+                         class:opacity-0={!isVisible}
+                     >
+                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent"></div>
+                         <div class="relative z-10 h-full flex flex-col">
+                             <div class="flex items-center justify-between mb-3">
+                                 <span class="text-xs font-bold text-blue-300">MIND</span>
+                                 <span class="text-2xl font-bold text-white">{mindScore}<span class="text-sm text-blue-400">%</span></span>
+                             </div>
+                             <div class="flex-1 flex items-center justify-center min-h-0">
+                                 <div class="w-full h-full flex items-center justify-center">
+                                    <!-- responsive max width for the brain visual -->
+                                    <div class="w-full max-w-[100px] sm:max-w-[140px] md:max-w-[160px] aspect-square">
                                         <Brain fillLevel={mindScore} />
                                     </div>
-                                </div>
-                            </div>
-                            <div class="mt-3 text-[10px] text-white/60 text-center">
-                                Attention: {attention}%
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Body Component -->
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        class="relative bg-gradient-to-br from-green-950/40 to-emerald-950/40 rounded-2xl p-4 border border-green-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
-                        onclick={() => goto("/body")}
-                        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/body')}
-                        class:translate-x-0={isVisible} 
-                        class:translate-x-full={!isVisible}
-                        class:opacity-100={isVisible} 
-                        class:opacity-0={!isVisible}
-                    >
-                        <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 to-transparent"></div>
-                        <div class="relative z-10 h-full flex flex-col">
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="text-xs font-bold text-green-300">BODY</span>
-                                <span class="text-2xl font-bold text-white">{bodyScore}<span class="text-sm text-green-400">%</span></span>
-                            </div>
-                            <div class="flex-1 flex items-center justify-center min-h-0">
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <div class="w-full max-w-[120px] h-full max-h-[180px]">
-                                                            <Body fillLevel={bodyScore} />
+                                 </div>
+                             </div>
+                             <div class="mt-3 text-[10px] text-white/60 text-center">
+                                 Attention: {attention}%
+                             </div>
+                         </div>
+                     </div>
+ 
+                     <!-- Body Component -->
+                     <div 
+                         role="button"
+                         tabindex="0"
+                         class="relative bg-gradient-to-br from-green-950/40 to-emerald-950/40 rounded-2xl p-4 border border-green-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
+                         onclick={() => goto("/body")}
+                         onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/body')}
+                         class:translate-x-0={isVisible} 
+                         class:translate-x-full={!isVisible}
+                         class:opacity-100={isVisible} 
+                         class:opacity-0={!isVisible}
+                     >
+                         <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 to-transparent"></div>
+                         <div class="relative z-10 h-full flex flex-col">
+                             <div class="flex items-center justify-between mb-3">
+                                 <span class="text-xs font-bold text-green-300">BODY</span>
+                                 <span class="text-2xl font-bold text-white">{bodyScore}<span class="text-sm text-green-400">%</span></span>
+                             </div>
+                             <div class="flex-1 flex items-center justify-center min-h-0">
+                                 <div class="w-full h-full flex items-center justify-center">
+                                    <!-- responsive size for body visual -->
+                                    <div class="w-full max-w-[100px] sm:max-w-[120px] md:max-w-[160px] h-full max-h-[140px] sm:max-h-[180px] md:max-h-[220px]">
+                                        <Body fillLevel={bodyScore} />
                                     </div>
-                                </div>
-                            </div>
-                            <div class="mt-3 text-[10px] text-white/60 text-center">
-                                Energy: {energy}%
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                 </div>
+                             </div>
+                             <div class="mt-3 text-[10px] text-white/60 text-center">
+                                 Energy: {energy}%
+                             </div>
+                         </div>
+                     </div>
+                 </div>
 
                 <!-- Overall Progress Ring -->
                 <div class="flex justify-center py-2">

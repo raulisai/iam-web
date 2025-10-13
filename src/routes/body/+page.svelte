@@ -202,7 +202,7 @@
             <div class="relative flex flex-col items-center">
                 <!-- Body component con altura controlada -->
                 <div class="w-full max-w-sm aspect-[3/4] mx-auto">
-                   <Body energy={energy} stamina={stamina} fillLevel={scoreBody} />
+                   <Body fillLevel={scoreBody} />
                 </div>
 
                 <!-- Health bars alrededor -->
@@ -243,7 +243,7 @@
                 <!-- Columna izquierda: Body visualization -->
                 <div class="flex flex-col gap-6">
                     <div class="w-full max-w-md mx-auto aspect-[3/4]">
-                        <Body energy={energy} stamina={stamina} fillLevel={scoreBody} />
+                        <Body fillLevel={scoreBody} />
                     </div>
                     
                     <!-- Progress rings -->

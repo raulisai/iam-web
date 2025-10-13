@@ -1,6 +1,6 @@
 <script lang="ts">
-export let energy: number = 75;
-export let stamina: number = 60;
+// The Body component only needs the fillLevel to render the fill overlay.
+// Remove unused exported props `energy` and `stamina` to avoid Svelte warnings.
 export let fillLevel: number = 50;
 
 let image = "/img/body-status-dark.png";

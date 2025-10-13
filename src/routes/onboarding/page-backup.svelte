@@ -4,7 +4,8 @@
 	import { scale, fade, fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 	import { initializeAuthStore } from '$lib/stores/auth.svelte';
-	import { createUserProfile, getUserProfile, type UserProfile } from '$lib/services/profile';
+	import { createUserProfile, getUserProfile } from '$lib/services/profile';
+	import type { UserProfile } from '$lib/types';
 	import { createBotRule, type CreateBotRuleData } from '$lib/services/bot_rules';
 	import { createTaskTemplate, type CreateTaskTemplateData } from '$lib/services/task_templates';
 	import { generateBotRules, getRecommendedTemplates, calculateXP } from '$lib/utils/onboarding';
@@ -234,7 +235,7 @@
 					key: `custom_${task.name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`,
 					name: task.name,
 					category: task.category,
-					descr: task.description,
+					desc: task.description,
 					estimated_minutes: task.duration,
 					difficulty: task.difficulty,
 					reward_xp: calculateXP(task.difficulty, task.duration),
@@ -644,7 +645,7 @@
 													</div>
 												{/if}
 											</div>
-											<p class="text-sm text-white/60 mb-3">{template.descr}</p>
+											<p class="text-sm text-white/60 mb-3">{template.desc}</p>
 											<div class="flex gap-3 text-xs text-white/40">
 												<span class="flex items-center gap-1">
 													<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -695,7 +696,7 @@
 													</div>
 												{/if}
 											</div>
-											<p class="text-sm text-white/60 mb-3">{template.descr}</p>
+											<p class="text-sm text-white/60 mb-3">{template.desc}</p>
 											<div class="flex gap-3 text-xs text-white/40">
 												<span class="flex items-center gap-1">
 													<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

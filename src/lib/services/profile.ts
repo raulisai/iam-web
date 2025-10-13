@@ -1,6 +1,9 @@
 import { apiCall } from '$lib/config';
 import type { UserProfile } from '$lib/types';
 
+// Re-export the type for convenience
+export type { UserProfile };
+
 /**
  * Get authenticated user's profile
  */

@@ -60,3 +60,6 @@ export async function deleteFailure(authStore: AuthStore, failureId: string): Pr
         return false;
     }
 }
+
+// Re-export types for convenience
+export type { Failure };

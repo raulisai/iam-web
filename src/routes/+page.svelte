@@ -273,7 +273,7 @@
                             <div class="flex-1 flex items-center justify-center min-h-0">
                                 <div class="w-full h-full flex items-center justify-center">
                                     <div class="w-full max-w-[120px] h-full max-h-[180px]">
-                                        <Body energy={energy} stamina={stamina} fillLevel={bodyScore} />
+                                                            <Body fillLevel={bodyScore} />
                                     </div>
                                 </div>
                             </div>
@@ -562,7 +562,7 @@
                             <!-- Body Visual -->
                             <div class="flex-1 flex items-center justify-center px-6 py-8 overflow-hidden min-h-0">
                                 <div class="w-full max-w-xs mx-auto" style="aspect-ratio: 1/1.5;">
-                                    <Body energy={energy} stamina={stamina} fillLevel={bodyScore} />
+                                    <Body fillLevel={bodyScore} />
                                 </div>
                             </div>
                             <!-- Footer Stats -->

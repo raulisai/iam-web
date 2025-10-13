@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getUserProfile, updateUserProfile, type UserProfile } from '$lib/services/profile';
+	import { getUserProfile, updateUserProfile } from '$lib/services/profile';
+	import type { UserProfile } from '$lib/types';
     import { initializeAuthStore, setAuthContext } from '$lib/stores/auth.svelte';
 	import CreateProfileForm from './CreateProfileForm.svelte';
 	import EditProfileModal from '$lib/components/EditProfileModal.svelte';

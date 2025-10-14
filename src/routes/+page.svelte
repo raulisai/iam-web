@@ -169,48 +169,46 @@
 <!-- Vista mobile-only -->
 <div class="md:hidden h-[calc(100dvh-4rem)] overflow-hidden bg-neutral-950">
     <div class="flex flex-col h-full">
-        <!-- Header con saludo -->
+        <!-- Header minimalista -->
         <div class="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-neutral-900 to-neutral-950">
             <div class="flex items-center justify-between">
                 <div class="transition-all duration-700" class:translate-y-0={isVisible} class:-translate-y-4={!isVisible} class:opacity-100={isVisible} class:opacity-0={!isVisible}>
-                    <h1 class="text-2xl font-bold text-white">Performance Hub</h1>
-                    <p class="text-xs text-white/60 mt-1">
+                    <h1 class="text-xl font-bold text-white">Performance Hub</h1>
+                    <p class="text-[10px] text-white/60 mt-0.5 font-mono">
                         {#if !isLoadingStats}
-                            Overall Score: {overallScore}% • {todayTasks} tasks today
+                            SCORE: {overallScore}%
                         {:else}
-                            Loading your data...
+                            LOADING...
                         {/if}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button
                         onclick={() => goto("/onboarding")}
-                        class="px-3 h-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 border border-purple-400/30 flex items-center justify-center gap-2 hover:from-purple-500 hover:to-blue-500 transition-all duration-300 hover:scale-105"
-                        title="Recalibrar Perfil"
+                        class="w-9 h-9 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 border border-purple-400/30 flex items-center justify-center hover:from-purple-500 hover:to-blue-500 transition-all duration-300 hover:scale-105"
+                        title="Setup"
                     >
                         <span class="text-sm">🎯</span>
-                        <span class="text-xs font-semibold text-white">Setup</span>
                     </button>
                     <button
                         onclick={() => goto("/profile")}
-                        class="w-10 h-10 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-all duration-300 hover:scale-110"
-                        title="Mi Perfil"
+                        class="w-9 h-9 rounded-lg bg-neutral-800 border border-white/10 flex items-center justify-center hover:bg-neutral-700 transition-all duration-300 hover:scale-110"
+                        title="Profile"
                     >
-                        <span class="text-lg">👤</span>
+                        <span class="text-sm">👤</span>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Contenido scrolleable -->
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto pb-4">
             <!-- Tasks Now Carousel - Mobile -->
-            <div class="px-4 py-4">
+            <div class="px-4 py-3">
                 <TasksNowCarousel 
                     token={getAuthContext().getToken() ?? ''} 
-                    carouselHeight="180px"
+                    carouselHeight="160px"
                     onTaskClick={(task) => {
-                        // Redirigir según el tipo de tarea
                         if (task.type === 'goal') goto(`/goals/${task.task_id}`);
                         else if (task.type === 'mind') goto('/minde');
                         else if (task.type === 'body') goto('/body');
@@ -219,14 +217,13 @@
             </div>
 
             <!-- Mind & Body Visualization -->
-            <div class="px-4 py-4">
-                <!-- Responsive height: small devices shorter, larger on sm/md -->
-                <div class="grid grid-cols-2 gap-3 mb-4 h-[280px] sm:h-[340px] md:h-[380px] lg:h-[460px] w-full">
+            <div class="px-4 py-2">
+                <div class="grid grid-cols-2 gap-3 mb-3 h-[240px] w-full">
                      <!-- Mind Component -->
                      <div 
                          role="button"
                          tabindex="0"
-                         class="relative bg-gradient-to-br from-blue-950/40 to-purple-950/40 rounded-2xl p-4 border border-blue-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
+                         class="relative bg-gradient-to-br from-blue-950/40 to-purple-950/40 rounded-xl p-3 border border-blue-500/20 overflow-hidden transition-all duration-500 active:scale-95 cursor-pointer"
                          onclick={() => goto("/minde")}
                          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/minde')}
                          class:translate-x-0={isVisible} 
@@ -236,20 +233,19 @@
                      >
                          <div class="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent"></div>
                          <div class="relative z-10 h-full flex flex-col">
-                             <div class="flex items-center justify-between mb-3">
-                                 <span class="text-xs font-bold text-blue-300">MIND</span>
-                                 <span class="text-2xl font-bold text-white">{mindScore}<span class="text-sm text-blue-400">%</span></span>
+                             <div class="flex items-center justify-between mb-2">
+                                 <span class="text-[10px] font-bold text-blue-300 font-mono">MIND</span>
+                                 <span class="text-xl font-bold text-white">{mindScore}<span class="text-xs text-blue-400">%</span></span>
                              </div>
                              <div class="flex-1 flex items-center justify-center min-h-0">
                                  <div class="w-full h-full flex items-center justify-center">
-                                    <!-- responsive max width for the brain visual -->
-                                    <div class="w-full max-w-[100px] sm:max-w-[140px] md:max-w-[160px] aspect-square">
+                                    <div class="w-full max-w-[90px] aspect-square">
                                         <Brain fillLevel={mindScore} />
                                     </div>
                                  </div>
                              </div>
-                             <div class="mt-3 text-[10px] text-white/60 text-center">
-                                 Attention: {attention}%
+                             <div class="mt-2 text-[9px] text-white/60 text-center font-mono">
+                                 ATT: {attention}%
                              </div>
                          </div>
                      </div>
@@ -258,7 +254,7 @@
                      <div 
                          role="button"
                          tabindex="0"
-                         class="relative bg-gradient-to-br from-green-950/40 to-emerald-950/40 rounded-2xl p-4 border border-green-500/20 overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer"
+                         class="relative bg-gradient-to-br from-green-950/40 to-emerald-950/40 rounded-xl p-3 border border-green-500/20 overflow-hidden transition-all duration-500 active:scale-95 cursor-pointer"
                          onclick={() => goto("/body")}
                          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/body')}
                          class:translate-x-0={isVisible} 
@@ -268,20 +264,19 @@
                      >
                          <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 to-transparent"></div>
                          <div class="relative z-10 h-full flex flex-col">
-                             <div class="flex items-center justify-between mb-3">
-                                 <span class="text-xs font-bold text-green-300">BODY</span>
-                                 <span class="text-2xl font-bold text-white">{bodyScore}<span class="text-sm text-green-400">%</span></span>
+                             <div class="flex items-center justify-between mb-2">
+                                 <span class="text-[10px] font-bold text-green-300 font-mono">BODY</span>
+                                 <span class="text-xl font-bold text-white">{bodyScore}<span class="text-xs text-green-400">%</span></span>
                              </div>
                              <div class="flex-1 flex items-center justify-center min-h-0">
                                  <div class="w-full h-full flex items-center justify-center">
-                                    <!-- responsive size for body visual -->
-                                    <div class="w-full max-w-[100px] sm:max-w-[120px] md:max-w-[160px] h-full max-h-[140px] sm:max-h-[180px] md:max-h-[220px]">
+                                    <div class="w-full max-w-[90px] h-full max-h-[130px]">
                                         <Body fillLevel={bodyScore} />
                                     </div>
                                  </div>
                              </div>
-                             <div class="mt-3 text-[10px] text-white/60 text-center">
-                                 Energy: {energy}%
+                             <div class="mt-2 text-[9px] text-white/60 text-center font-mono">
+                                 NRG: {energy}%
                              </div>
                          </div>
                      </div>
@@ -292,156 +287,101 @@
                     <div class="relative transition-all duration-700" class:scale-100={isVisible} class:scale-0={!isVisible}>
                         <ProgressRing
                             progress={overallScore}
-                            size={120}
-                            strokeWidth={10}
-                            label="Overall"
-                            sublabel={isLoadingStats ? "Loading..." : `${overallScore}%`}
+                            size={100}
+                            strokeWidth={8}
+                            label="CORE"
+                            sublabel={isLoadingStats ? "..." : `${overallScore}%`}
                         />
                     </div>
                 </div>
             </div>
 
-            <!-- Detailed Health Metrics -->
-            <div class="px-4 mb-4">
-                <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <span class="text-lg">📊</span>
-                    Detailed Metrics
-                </h2>
-                <div class="space-y-2">
-                    <HealthBar value={energy} max={100} label="Energy" color="green" />
-                    <HealthBar value={stamina} max={100} label="Stamina" color="blue" />
-                    <HealthBar value={strength} max={100} label="Strength" color="red" />
-                    <HealthBar value={flexibility} max={100} label="Flexibility" color="yellow" />
-                    <HealthBar value={attention} max={100} label="Attention" color="blue" />
+            <!-- Game-style Health Bars -->
+            <div class="px-4 mb-3">
+                <h2 class="text-[10px] font-mono text-white/60 mb-2 tracking-wider">STATS</h2>
+                <div class="space-y-1.5">
+                    <div class="mobile-game-bar">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[9px] font-bold text-green-300 font-mono">⚡ ENERGY</span>
+                            <span class="text-[9px] font-bold text-white font-mono">{energy}</span>
+                        </div>
+                        <div class="mobile-bar-bg">
+                            <div class="mobile-bar-fill bg-gradient-to-r from-green-500 to-emerald-400" style="width: {energy}%"></div>
+                        </div>
+                    </div>
+                    <div class="mobile-game-bar">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[9px] font-bold text-red-300 font-mono">💪 STRENGTH</span>
+                            <span class="text-[9px] font-bold text-white font-mono">{strength}</span>
+                        </div>
+                        <div class="mobile-bar-bg">
+                            <div class="mobile-bar-fill bg-gradient-to-r from-red-500 to-orange-400" style="width: {strength}%"></div>
+                        </div>
+                    </div>
+                    <div class="mobile-game-bar">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[9px] font-bold text-blue-300 font-mono">🏃 STAMINA</span>
+                            <span class="text-[9px] font-bold text-white font-mono">{stamina}</span>
+                        </div>
+                        <div class="mobile-bar-bg">
+                            <div class="mobile-bar-fill bg-gradient-to-r from-blue-500 to-cyan-400" style="width: {stamina}%"></div>
+                        </div>
+                    </div>
+                    <div class="mobile-game-bar">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[9px] font-bold text-yellow-300 font-mono">🤸 FLEXIBILITY</span>
+                            <span class="text-[9px] font-bold text-white font-mono">{flexibility}</span>
+                        </div>
+                        <div class="mobile-bar-bg">
+                            <div class="mobile-bar-fill bg-gradient-to-r from-yellow-500 to-amber-400" style="width: {flexibility}%"></div>
+                        </div>
+                    </div>
+                    <div class="mobile-game-bar">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[9px] font-bold text-purple-300 font-mono">🎯 ATTENTION</span>
+                            <span class="text-[9px] font-bold text-white font-mono">{attention}</span>
+                        </div>
+                        <div class="mobile-bar-bg">
+                            <div class="mobile-bar-fill bg-gradient-to-r from-purple-500 to-pink-400" style="width: {attention}%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="px-4 mb-4">
-                <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <span class="text-lg">📈</span>
-                    Today's Stats
-                </h2>
-                <div class="grid grid-cols-2 gap-3">
-                    <StatsCard
-                        title="Tasks"
-                        value={`${todayTasks}`}
-                        subtitle={`${mindTasks.length} mind • ${bodyTasks.length} body`}
-                        icon="📋"
-                        trend="neutral"
-                        color="blue"
-                    />
-                    <StatsCard
-                        title="Goals"
-                        value={`${activeGoals.length}`}
-                        subtitle="Active goals"
-                        icon="🎯"
-                        trend="up"
-                        color="amber"
-                    />
-                    <StatsCard
-                        title="Calories"
-                        value={caloriesBurned}
-                        subtitle="Burned today"
-                        icon="🔥"
-                        trend="up"
-                        color="red"
-                    />
-                    <StatsCard
-                        title="Steps"
-                        value={stepsDailyValue}
-                        subtitle="Daily steps"
-                        icon="👟"
-                        trend="neutral"
-                        color="emerald"
-                    />
-                    <StatsCard
-                        title="Heart Rate"
-                        value={`${heartRate}`}
-                        subtitle="BPM resting"
-                        icon="❤️"
-                        trend="down"
-                        color="red"
-                    />
-                    <StatsCard
-                        title="Sleep"
-                        value={`${sleepScore}%`}
-                        subtitle="Sleep quality"
-                        icon="💤"
-                        trend="up"
-                        color="blue"
-                    />
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="px-4 mb-4">
-                <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <span class="text-lg">⚡</span>
-                    Quick Actions
-                </h2>
-                <div class="grid grid-cols-4 gap-2">
-                    {#each quickActions as action}
-                        <QuickAction {...action} />
-                    {/each}
-                </div>
-            </div>
-
-            <!-- Task Overview -->
-            <div class="px-4 pb-6">
-                <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <span class="text-lg">✅</span>
-                    Today's Tasks
-                </h2>
-                <div class="space-y-2">
-                    {#if mindTasks.length > 0}
-                        <div class="p-3 rounded-lg bg-gradient-to-r from-blue-950/40 to-purple-950/40 border border-blue-500/20">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <div class="text-xs font-semibold text-blue-300">Mind Tasks</div>
-                                    <div class="text-sm text-white mt-1">{mindTasks.length} tasks pending</div>
-                                </div>
-                                <button 
-                                    onclick={() => goto("/minde")}
-                                    class="px-3 py-1 rounded-lg bg-blue-500/20 text-blue-300 text-xs font-semibold hover:bg-blue-500/30 transition-colors"
-                                >
-                                    View →
-                                </button>
-                            </div>
-                        </div>
-                    {/if}
-                    {#if bodyTasks.length > 0}
-                        <div class="p-3 rounded-lg bg-gradient-to-r from-green-950/40 to-emerald-950/40 border border-green-500/20">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <div class="text-xs font-semibold text-green-300">Body Tasks</div>
-                                    <div class="text-sm text-white mt-1">{bodyTasks.length} tasks pending</div>
-                                </div>
-                                <button 
-                                    onclick={() => goto("/body")}
-                                    class="px-3 py-1 rounded-lg bg-green-500/20 text-green-300 text-xs font-semibold hover:bg-green-500/30 transition-colors"
-                                >
-                                    View →
-                                </button>
-                            </div>
-                        </div>
-                    {/if}
-                    {#if activeGoals.length > 0}
-                        <div class="p-3 rounded-lg bg-gradient-to-r from-amber-950/40 to-yellow-950/40 border border-amber-500/20">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <div class="text-xs font-semibold text-amber-300">Active Goals</div>
-                                    <div class="text-sm text-white mt-1">{activeGoals.length} goals in progress</div>
-                                </div>
-                                <button 
-                                    onclick={() => goto("/goals")}
-                                    class="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-semibold hover:bg-amber-500/30 transition-colors"
-                                >
-                                    View →
-                                </button>
-                            </div>
-                        </div>
-                    {/if}
+            <!-- Today Stats - Compact Grid -->
+            <div class="px-4">
+                <h2 class="text-[10px] font-mono text-white/60 mb-2 tracking-wider">TODAY</h2>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="mobile-stat-card">
+                        <div class="text-lg mb-1">🔥</div>
+                        <div class="text-sm font-bold text-white">{caloriesBurned}</div>
+                        <div class="text-[8px] text-white/40 font-mono mt-0.5">CAL</div>
+                    </div>
+                    <div class="mobile-stat-card">
+                        <div class="text-lg mb-1">👟</div>
+                        <div class="text-sm font-bold text-white">{stepsDailyValue}</div>
+                        <div class="text-[8px] text-white/40 font-mono mt-0.5">STEPS</div>
+                    </div>
+                    <div class="mobile-stat-card">
+                        <div class="text-lg mb-1 animate-pulse">❤️</div>
+                        <div class="text-sm font-bold text-white">{heartRate}</div>
+                        <div class="text-[8px] text-white/40 font-mono mt-0.5">BPM</div>
+                    </div>
+                    <div class="mobile-stat-card">
+                        <div class="text-lg mb-1">💤</div>
+                        <div class="text-sm font-bold text-white">{sleepScore}%</div>
+                        <div class="text-[8px] text-white/40 font-mono mt-0.5">SLEEP</div>
+                    </div>
+                    <div class="mobile-stat-card">
+                        <div class="text-lg mb-1">📋</div>
+                        <div class="text-sm font-bold text-white">{todayTasks}</div>
+                        <div class="text-[8px] text-white/40 font-mono mt-0.5">TASKS</div>
+                    </div>
+                    <div class="mobile-stat-card">
+                        <div class="text-lg mb-1">🎯</div>
+                        <div class="text-sm font-bold text-white">{activeGoals.length}</div>
+                        <div class="text-[8px] text-white/40 font-mono mt-0.5">GOALS</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -903,5 +843,60 @@
         background: linear-gradient(transparent, rgba(255, 255, 255, 0.3), transparent);
         animation: scan-line 4s linear infinite;
         pointer-events: none;
+    }
+
+    /* Mobile Game Bars */
+    :global(.mobile-game-bar) {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+
+    :global(.mobile-bar-bg) {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    :global(.mobile-bar-fill) {
+        height: 100%;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        box-shadow: 0 0 8px currentColor;
+    }
+
+    :global(.mobile-bar-fill::after) {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    /* Mobile Stat Cards */
+    :global(.mobile-stat-card) {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 0.75rem 0.5rem;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+
+    :global(.mobile-stat-card:active) {
+        transform: scale(0.95);
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
     }
 </style>

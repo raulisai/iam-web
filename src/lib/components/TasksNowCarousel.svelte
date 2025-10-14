@@ -124,109 +124,100 @@
 </script>
 
 <div class="w-full">
-	<!-- Header con estadísticas -->
-	<div class="mb-4 sm:mb-6">
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-			<div>
-				<h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white flex items-center gap-2 sm:gap-3">
-					<span class="text-2xl sm:text-3xl md:text-4xl">⚡</span>
-					<span>Tareas para Ahora</span>
-				</h2>
-			</div>
-			<button
-				onclick={loadTasks}
-				disabled={loading}
-				class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
-				aria-label="Refresh tasks"
-			>
-				<svg 
-					class="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-180 {loading ? 'animate-spin' : ''}"
-					viewBox="0 0 24 24" 
-					fill="none" 
-					stroke="currentColor" 
-					stroke-width="2"
-				>
-					<path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
-				</svg>
-				<span class="hidden sm:inline">Actualizar</span>
-			</button>
-		</div>
-
-		{#if data && !loading}
-			<!-- Utilización del tiempo - Diseño minimalista y creativo -->
-			<div class="mb-4" transition:fade>
-				<div class="relative rounded-xl bg-gradient-to-br from-neutral-800/50 to-neutral-900/50 border border-neutral-700/50 p-4 overflow-hidden backdrop-blur-sm">
-					<!-- Background animated gradient -->
-					<div class="absolute inset-0 opacity-20">
-						<div class="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20 animate-gradient"></div>
-					</div>
-					
-					<div class="relative z-10 flex items-center justify-between">
-						<!-- Progreso circular -->
-						<div class="flex items-center gap-4">
-							<div class="relative w-16 h-16 sm:w-20 sm:h-20">
-								<!-- Background circle -->
+	{#if data && !loading}
+		<!-- Barra compacta con todo integrado -->
+		<div class="mb-3 sm:mb-4" transition:fade>
+			<div class="relative rounded-lg bg-gradient-to-br from-neutral-800/50 to-neutral-900/50 border border-neutral-700/50 p-2.5 sm:p-3 overflow-hidden backdrop-blur-sm">
+				<!-- Background animated gradient -->
+				<div class="absolute inset-0 opacity-20">
+					<div class="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20 animate-gradient"></div>
+				</div>
+				
+				<div class="relative z-10 flex items-center justify-between gap-2 sm:gap-3">
+					<!-- Lado izquierdo: Icono + Título + Progreso -->
+					<div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+						<!-- Icono -->
+						<span class="text-xl sm:text-2xl flex-shrink-0">⚡</span>
+						
+						<!-- Título y progreso circular compacto -->
+						<div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+							<div class="flex-shrink-0">
+								<h2 class="text-sm sm:text-base md:text-lg font-bold text-white whitespace-nowrap">
+									Tareas para Ahora
+								</h2>
+								<div class="text-[10px] sm:text-xs text-neutral-400">
+									Optimización del tiempo
+								</div>
+							</div>
+							
+							<!-- Progreso circular compacto -->
+							<div class="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
 								<svg class="transform -rotate-90 w-full h-full">
 									<circle
 										cx="50%"
 										cy="50%"
-										r="30"
+										r="16"
 										stroke="currentColor"
-										stroke-width="4"
+										stroke-width="3"
 										fill="none"
 										class="text-neutral-700/50"
 									/>
-									<!-- Progress circle -->
 									<circle
 										cx="50%"
 										cy="50%"
-										r="30"
+										r="16"
 										stroke="currentColor"
-										stroke-width="4"
+										stroke-width="3"
 										fill="none"
 										stroke-linecap="round"
 										class="{getUtilizationColor(data.utilization_percentage)} transition-all duration-1000"
-										style="stroke-dasharray: {2 * Math.PI * 30}; stroke-dashoffset: {2 * Math.PI * 30 * (1 - data.utilization_percentage / 100)};"
+										style="stroke-dasharray: {2 * Math.PI * 16}; stroke-dashoffset: {2 * Math.PI * 16 * (1 - data.utilization_percentage / 100)};"
 									/>
 								</svg>
-								<!-- Center percentage -->
 								<div class="absolute inset-0 flex items-center justify-center">
-									<span class="text-lg sm:text-xl font-bold {getUtilizationColor(data.utilization_percentage)}">
+									<span class="text-[10px] sm:text-xs font-bold {getUtilizationColor(data.utilization_percentage)}">
 										{data.utilization_percentage.toFixed(0)}%
 									</span>
 								</div>
 							</div>
-							
-							<div>
-								<div class="text-xs sm:text-sm text-neutral-400 mb-1">Optimización del tiempo</div>
-								<div class="text-base sm:text-lg font-semibold text-white">
-									{#if data.utilization_percentage >= 85}
-										Excelente rendimiento
-									{:else if data.utilization_percentage >= 70}
-										Buen aprovechamiento
-									{:else if data.utilization_percentage >= 50}
-										Puede mejorar
-									{:else}
-										Tiempo disponible
-									{/if}
-								</div>
-							</div>
 						</div>
-						
-						<!-- Contador de tareas total -->
-						<div class="flex flex-col items-end">
-							<div class="text-3xl sm:text-4xl font-bold text-white mb-1">
+					</div>
+					
+					<!-- Lado derecho: Contador de tareas + Botón actualizar -->
+					<div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+						<!-- Contador de tareas -->
+						<div class="flex flex-col items-center">
+							<div class="text-xl sm:text-2xl font-bold text-white leading-none">
 								{allTasks().length}
 							</div>
-							<div class="text-xs sm:text-sm text-neutral-400">
+							<div class="text-[9px] sm:text-[10px] text-neutral-400 leading-none mt-0.5">
 								{allTasks().length === 1 ? 'tarea' : 'tareas'}
 							</div>
 						</div>
+						
+						<!-- Botón actualizar -->
+						<button
+							onclick={loadTasks}
+							disabled={loading}
+							class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-neutral-700/50 hover:bg-neutral-600/50 text-white transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group flex-shrink-0"
+							aria-label="Refresh tasks"
+							title="Actualizar"
+						>
+							<svg 
+								class="w-4 h-4 transition-transform group-hover:rotate-180 {loading ? 'animate-spin' : ''}"
+								viewBox="0 0 24 24" 
+								fill="none" 
+								stroke="currentColor" 
+								stroke-width="2"
+							>
+								<path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+							</svg>
+						</button>
 					</div>
 				</div>
 			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
 
 	{#if loading}
 		<!-- Loading State -->

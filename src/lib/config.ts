@@ -1,5 +1,5 @@
 // Configuración del backend
-export const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+export const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'https://s8s23kr8-5000.usw3.devtunnels.ms';
 
 // Configuración de la aplicación
 export const APP_CONFIG = {

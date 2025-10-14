@@ -153,45 +153,75 @@
 		</div>
 
 		{#if data && !loading}
-			<!-- Stats compactas -->
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4" transition:fade>
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
-					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-						<span class="text-lg sm:text-2xl">📊</span>
-						<span class="text-[10px] sm:text-xs text-neutral-400">Utilización</span>
+			<!-- Utilización del tiempo - Diseño minimalista y creativo -->
+			<div class="mb-4" transition:fade>
+				<div class="relative rounded-xl bg-gradient-to-br from-neutral-800/50 to-neutral-900/50 border border-neutral-700/50 p-4 overflow-hidden backdrop-blur-sm">
+					<!-- Background animated gradient -->
+					<div class="absolute inset-0 opacity-20">
+						<div class="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20 animate-gradient"></div>
 					</div>
-					<div class="text-base sm:text-xl font-bold {getUtilizationColor(data.utilization_percentage)}">
-						{data.utilization_percentage.toFixed(0)}%
-					</div>
-				</div>
-
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
-					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-						<span class="text-lg sm:text-2xl">🎯</span>
-						<span class="text-[10px] sm:text-xs text-neutral-400">Objetivos</span>
-					</div>
-					<div class="text-base sm:text-xl font-bold text-blue-400">
-						{data.goal_tasks.length}
-					</div>
-				</div>
-
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
-					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-						<span class="text-lg sm:text-2xl">🧠</span>
-						<span class="text-[10px] sm:text-xs text-neutral-400">Desarrollo</span>
-					</div>
-					<div class="text-base sm:text-xl font-bold text-purple-400">
-						{data.mind_tasks.length}
-					</div>
-				</div>
-
-				<div class="rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 p-2 sm:p-3 border border-neutral-700">
-					<div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-						<span class="text-lg sm:text-2xl">💪</span>
-						<span class="text-[10px] sm:text-xs text-neutral-400">Bienestar</span>
-					</div>
-					<div class="text-base sm:text-xl font-bold text-emerald-400">
-						{data.body_tasks.length}
+					
+					<div class="relative z-10 flex items-center justify-between">
+						<!-- Progreso circular -->
+						<div class="flex items-center gap-4">
+							<div class="relative w-16 h-16 sm:w-20 sm:h-20">
+								<!-- Background circle -->
+								<svg class="transform -rotate-90 w-full h-full">
+									<circle
+										cx="50%"
+										cy="50%"
+										r="30"
+										stroke="currentColor"
+										stroke-width="4"
+										fill="none"
+										class="text-neutral-700/50"
+									/>
+									<!-- Progress circle -->
+									<circle
+										cx="50%"
+										cy="50%"
+										r="30"
+										stroke="currentColor"
+										stroke-width="4"
+										fill="none"
+										stroke-linecap="round"
+										class="{getUtilizationColor(data.utilization_percentage)} transition-all duration-1000"
+										style="stroke-dasharray: {2 * Math.PI * 30}; stroke-dashoffset: {2 * Math.PI * 30 * (1 - data.utilization_percentage / 100)};"
+									/>
+								</svg>
+								<!-- Center percentage -->
+								<div class="absolute inset-0 flex items-center justify-center">
+									<span class="text-lg sm:text-xl font-bold {getUtilizationColor(data.utilization_percentage)}">
+										{data.utilization_percentage.toFixed(0)}%
+									</span>
+								</div>
+							</div>
+							
+							<div>
+								<div class="text-xs sm:text-sm text-neutral-400 mb-1">Optimización del tiempo</div>
+								<div class="text-base sm:text-lg font-semibold text-white">
+									{#if data.utilization_percentage >= 85}
+										Excelente rendimiento
+									{:else if data.utilization_percentage >= 70}
+										Buen aprovechamiento
+									{:else if data.utilization_percentage >= 50}
+										Puede mejorar
+									{:else}
+										Tiempo disponible
+									{/if}
+								</div>
+							</div>
+						</div>
+						
+						<!-- Contador de tareas total -->
+						<div class="flex flex-col items-end">
+							<div class="text-3xl sm:text-4xl font-bold text-white mb-1">
+								{allTasks().length}
+							</div>
+							<div class="text-xs sm:text-sm text-neutral-400">
+								{allTasks().length === 1 ? 'tarea' : 'tareas'}
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -419,5 +449,22 @@
 		line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+	}
+	
+	@keyframes gradient {
+		0% {
+			background-position: 0% 50%;
+		}
+		50% {
+			background-position: 100% 50%;
+		}
+		100% {
+			background-position: 0% 50%;
+		}
+	}
+	
+	.animate-gradient {
+		background-size: 200% 200%;
+		animation: gradient 8s ease infinite;
 	}
 </style>

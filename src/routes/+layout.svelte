@@ -48,7 +48,7 @@
 			<NavBar user={authStore.user} />
 			
 			<!-- Contenido principal -->
-			<div class="flex-1">
+			<div class="flex-1 mb-20">
 				{@render children?.()}
 			</div>
 

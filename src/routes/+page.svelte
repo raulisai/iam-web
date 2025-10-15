@@ -202,9 +202,9 @@
         </div>
 
         <!-- Contenido scrolleable -->
-        <div class="flex-1 overflow-y-auto pb-4">
+        <div class="flex-1 overflow-y-auto pb-1">
             <!-- Tasks Now Carousel - Mobile -->
-            <div class="px-4 py-3">
+            <div class="px-4 py-1">
                 <TasksNowCarousel 
                     token={getAuthContext().getToken() ?? ''} 
                     carouselHeight="160px"
@@ -216,171 +216,154 @@
                 />
             </div>
 
-            <!-- Mind & Body Visualization -->
-            <div class="px-4 py-2">
-                <div class="grid grid-cols-2 gap-3 mb-3 h-[240px] w-full">
-                     <!-- Mind Component -->
-                     <div 
-                         role="button"
-                         tabindex="0"
-                         class="relative bg-gradient-to-br from-blue-950/40 to-purple-950/40 rounded-xl p-3 border border-blue-500/20 overflow-hidden transition-all duration-500 active:scale-95 cursor-pointer"
-                         onclick={() => goto("/minde")}
-                         onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/minde')}
-                         class:translate-x-0={isVisible} 
-                         class:-translate-x-full={!isVisible}
-                         class:opacity-100={isVisible} 
-                         class:opacity-0={!isVisible}
-                     >
-                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent"></div>
-                         <div class="relative z-10 h-full flex flex-col">
-                             <div class="flex items-center justify-between mb-2">
-                                 <span class="text-[10px] font-bold text-blue-300 font-mono">MIND</span>
-                                 <span class="text-xl font-bold text-white">{mindScore}<span class="text-xs text-blue-400">%</span></span>
-                             </div>
-                             <div class="flex-1 flex items-center justify-center min-h-0">
-                                 <div class="w-full h-full flex items-center justify-center">
-                                    <div class="w-full max-w-[90px] aspect-square">
-                                        <Brain fillLevel={mindScore} />
-                                    </div>
-                                 </div>
-                             </div>
-                             <div class="mt-2 text-[9px] text-white/60 text-center font-mono">
-                                 ATT: {attention}%
-                             </div>
-                         </div>
-                     </div>
- 
-                     <!-- Body Component -->
-                     <div 
-                         role="button"
-                         tabindex="0"
-                         class="relative bg-gradient-to-br from-green-950/40 to-emerald-950/40 rounded-xl p-3 border border-green-500/20 overflow-hidden transition-all duration-500 active:scale-95 cursor-pointer"
-                         onclick={() => goto("/body")}
-                         onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/body')}
-                         class:translate-x-0={isVisible} 
-                         class:translate-x-full={!isVisible}
-                         class:opacity-100={isVisible} 
-                         class:opacity-0={!isVisible}
-                     >
-                         <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 to-transparent"></div>
-                         <div class="relative z-10 h-full flex flex-col">
-                             <div class="flex items-center justify-between mb-2">
-                                 <span class="text-[10px] font-bold text-green-300 font-mono">BODY</span>
-                                 <span class="text-xl font-bold text-white">{bodyScore}<span class="text-xs text-green-400">%</span></span>
-                             </div>
-                             <div class="flex-1 flex items-center justify-center min-h-0">
-                                 <div class="w-full h-full flex items-center justify-center">
-                                    <div class="w-full max-w-[90px] h-full max-h-[130px]">
-                                        <Body fillLevel={bodyScore} />
-                                    </div>
-                                 </div>
-                             </div>
-                             <div class="mt-2 text-[9px] text-white/60 text-center font-mono">
-                                 NRG: {energy}%
-                             </div>
-                         </div>
-                     </div>
-                 </div>
+            <!-- Mind & Body Visualization con Core en el medio -->
+            <div class="px-2 py-1">
+                <div class="relative h-[420px] w-full">
+                    <div class="grid grid-cols-2 gap-0 h-full">
+                        <!-- Mind Component - Sin marco con zoom mejorado -->
+                        <div
+                            role="button"
+                            tabindex="0"
+                            class="relative overflow-visible transition-all duration-500 active:scale-95 cursor-pointer pr-6 group/mind"
+                            onclick={() => goto("/minde")}
+                            onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/minde')}
+                            class:translate-x-0={isVisible}
+                            class:-translate-x-full={!isVisible}
+                            class:opacity-100={isVisible}
+                            class:opacity-0={!isVisible}
+                        >
+                            <div class="h-full flex flex-col items-center justify-center transform group-active/mind:scale-110 transition-transform duration-300">
+                                <div class="text-[10px] font-bold text-blue-300 font-mono mb-1 opacity-80">MIND</div>
+                                <div class="text-4xl font-bold text-white mb-3 drop-shadow-lg">{mindScore}<span class="text-lg text-blue-400">%</span></div>
+                                <div class="w-full max-w-[170px] aspect-square transform group-active/mind:scale-115 transition-transform duration-300">
+                                    <Brain fillLevel={mindScore} />
+                                </div>
+                                <div class="mt-3 text-[9px] text-white/50 font-mono">ATT: {attention}%</div>
+                            </div>
+                        </div>
 
-                <!-- Overall Progress Ring -->
-                <div class="flex justify-center py-2">
-                    <div class="relative transition-all duration-700" class:scale-100={isVisible} class:scale-0={!isVisible}>
-                        <ProgressRing
-                            progress={overallScore}
-                            size={100}
-                            strokeWidth={8}
-                            label="CORE"
-                            sublabel={isLoadingStats ? "..." : `${overallScore}%`}
-                        />
+
+                        <!-- Body Component - Sin marco con zoom mejorado -->
+                        <div
+                            role="button"
+                            tabindex="0"
+                            class="relative overflow-visible transition-all duration-500 active:scale-95 cursor-pointer pl-6 group/body"
+                            onclick={() => goto("/body")}
+                            onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && goto('/body')}
+                            class:translate-x-0={isVisible}
+                            class:translate-x-full={!isVisible}
+                            class:opacity-100={isVisible}
+                            class:opacity-0={!isVisible}
+                        >
+                            <div class="h-full flex flex-col items-center justify-center transform group-active/body:scale-110 transition-transform duration-300">
+                                <div class="text-[10px] font-bold text-green-300 font-mono mb-1 opacity-80">BODY</div>
+                                <div class="text-4xl font-bold text-white mb-3 drop-shadow-lg">{bodyScore}<span class="text-lg text-green-400">%</span></div>
+                                <div class="w-full max-w-[170px] h-full max-h-[230px] transform group-active/body:scale-115 transition-transform duration-300">
+                                    <Body fillLevel={bodyScore} />
+                                </div>
+                                <div class="mt-3 text-[9px] text-white/50 font-mono">NRG: {energy}%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Core Progress Ring - Simple y Elegante -->
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                        <div class="relative transition-all duration-700" class:scale-100={isVisible} class:scale-0={!isVisible}>
+                            <!-- Main container - Simple y elegante -->
+                            <div class="relative bg-neutral-950/95 rounded-full p-3 border border-white/15 backdrop-blur-md shadow-xl">
+                                <!-- Subtle inner glow -->
+                                <div class="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500/5 to-blue-500/5"></div>
+
+                                <div class="relative">
+                                    <ProgressRing
+                                        progress={overallScore}
+                                        size={75}
+                                        strokeWidth={7}
+                                        label="CORE"
+                                        sublabel={isLoadingStats ? "..." : `${overallScore}%`}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Game-style Health Bars -->
-            <div class="px-4 mb-3">
-                <h2 class="text-[10px] font-mono text-white/60 mb-2 tracking-wider">STATS</h2>
-                <div class="space-y-1.5">
-                    <div class="mobile-game-bar">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[9px] font-bold text-green-300 font-mono">⚡ ENERGY</span>
-                            <span class="text-[9px] font-bold text-white font-mono">{energy}</span>
+            <!-- Game-style Health Bars - Ultra compactas -->
+            <div class="px-4 mb-2 -mt-16">
+                <h2 class="text-[9px] font-mono text-white/50 mb-1.5 tracking-wider">STATS</h2>
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-green-300 font-mono w-16">⚡ ENERGY</span>
+                        <div class="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-1000" style="width: {energy}%"></div>
                         </div>
-                        <div class="mobile-bar-bg">
-                            <div class="mobile-bar-fill bg-gradient-to-r from-green-500 to-emerald-400" style="width: {energy}%"></div>
-                        </div>
+                        <span class="text-[10px] font-bold text-white font-mono w-6 text-right">{energy}</span>
                     </div>
-                    <div class="mobile-game-bar">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[9px] font-bold text-red-300 font-mono">💪 STRENGTH</span>
-                            <span class="text-[9px] font-bold text-white font-mono">{strength}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-red-300 font-mono w-16">💪 STRENGTH</span>
+                        <div class="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                            <div class="h-full bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-1000" style="width: {strength}%"></div>
                         </div>
-                        <div class="mobile-bar-bg">
-                            <div class="mobile-bar-fill bg-gradient-to-r from-red-500 to-orange-400" style="width: {strength}%"></div>
-                        </div>
+                        <span class="text-[10px] font-bold text-white font-mono w-6 text-right">{strength}</span>
                     </div>
-                    <div class="mobile-game-bar">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[9px] font-bold text-blue-300 font-mono">🏃 STAMINA</span>
-                            <span class="text-[9px] font-bold text-white font-mono">{stamina}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-blue-300 font-mono w-16">🏃 STAMINA</span>
+                        <div class="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-1000" style="width: {stamina}%"></div>
                         </div>
-                        <div class="mobile-bar-bg">
-                            <div class="mobile-bar-fill bg-gradient-to-r from-blue-500 to-cyan-400" style="width: {stamina}%"></div>
-                        </div>
+                        <span class="text-[8px] font-bold text-white font-mono w-6 text-right">{stamina}</span>
                     </div>
-                    <div class="mobile-game-bar">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[9px] font-bold text-yellow-300 font-mono">🤸 FLEXIBILITY</span>
-                            <span class="text-[9px] font-bold text-white font-mono">{flexibility}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[8px] font-bold text-yellow-300 font-mono w-16">🤸 FLEX</span>
+                        <div class="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                            <div class="h-full bg-gradient-to-r from-yellow-500 to-amber-400 transition-all duration-1000" style="width: {flexibility}%"></div>
                         </div>
-                        <div class="mobile-bar-bg">
-                            <div class="mobile-bar-fill bg-gradient-to-r from-yellow-500 to-amber-400" style="width: {flexibility}%"></div>
-                        </div>
+                        <span class="text-[8px] font-bold text-white font-mono w-6 text-right">{flexibility}</span>
                     </div>
-                    <div class="mobile-game-bar">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[9px] font-bold text-purple-300 font-mono">🎯 ATTENTION</span>
-                            <span class="text-[9px] font-bold text-white font-mono">{attention}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[8px] font-bold text-purple-300 font-mono w-16">🎯 ATTENTION</span>
+                        <div class="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                            <div class="h-full bg-gradient-to-r from-purple-500 to-pink-400 transition-all duration-1000" style="width: {attention}%"></div>
                         </div>
-                        <div class="mobile-bar-bg">
-                            <div class="mobile-bar-fill bg-gradient-to-r from-purple-500 to-pink-400" style="width: {attention}%"></div>
-                        </div>
+                        <span class="text-[8px] font-bold text-white font-mono w-6 text-right">{attention}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Today Stats - Compact Grid -->
             <div class="px-4">
-                <h2 class="text-[10px] font-mono text-white/60 mb-2 tracking-wider">TODAY</h2>
-                <div class="grid grid-cols-3 gap-2">
+                <h2 class="text-[8px] font-mono text-white/50 mb-1 tracking-wider">TODAY</h2>
+                <div class="grid grid-cols-3 gap-1">
                     <div class="mobile-stat-card">
-                        <div class="text-lg mb-1">🔥</div>
-                        <div class="text-sm font-bold text-white">{caloriesBurned}</div>
-                        <div class="text-[8px] text-white/40 font-mono mt-0.5">CAL</div>
+                        <div class="text-sm mb-0.5">🔥</div>
+                        <div class="text-[10px] font-bold text-white">{caloriesBurned}</div>
+                        <div class="text-[6px] text-white/40 font-mono mt-0.5">CAL</div>
                     </div>
                     <div class="mobile-stat-card">
-                        <div class="text-lg mb-1">👟</div>
-                        <div class="text-sm font-bold text-white">{stepsDailyValue}</div>
-                        <div class="text-[8px] text-white/40 font-mono mt-0.5">STEPS</div>
+                        <div class="text-sm mb-0.5">👟</div>
+                        <div class="text-[10px] font-bold text-white">{stepsDailyValue}</div>
+                        <div class="text-[6px] text-white/40 font-mono mt-0.5">STEPS</div>
                     </div>
                     <div class="mobile-stat-card">
-                        <div class="text-lg mb-1 animate-pulse">❤️</div>
-                        <div class="text-sm font-bold text-white">{heartRate}</div>
-                        <div class="text-[8px] text-white/40 font-mono mt-0.5">BPM</div>
+                        <div class="text-sm mb-0.5 animate-pulse">❤️</div>
+                        <div class="text-[10px] font-bold text-white">{heartRate}</div>
+                        <div class="text-[6px] text-white/40 font-mono mt-0.5">BPM</div>
                     </div>
                     <div class="mobile-stat-card">
-                        <div class="text-lg mb-1">💤</div>
-                        <div class="text-sm font-bold text-white">{sleepScore}%</div>
-                        <div class="text-[8px] text-white/40 font-mono mt-0.5">SLEEP</div>
+                        <div class="text-sm mb-0.5">💤</div>
+                        <div class="text-[10px] font-bold text-white">{sleepScore}%</div>
+                        <div class="text-[6px] text-white/40 font-mono mt-0.5">SLEEP</div>
                     </div>
                     <div class="mobile-stat-card">
-                        <div class="text-lg mb-1">📋</div>
-                        <div class="text-sm font-bold text-white">{todayTasks}</div>
-                        <div class="text-[8px] text-white/40 font-mono mt-0.5">TASKS</div>
+                        <div class="text-sm mb-0.5">📋</div>
+                        <div class="text-[10px] font-bold text-white">{todayTasks}</div>
+                        <div class="text-[6px] text-white/40 font-mono mt-0.5">TASKS</div>
                     </div>
                     <div class="mobile-stat-card">
-                        <div class="text-lg mb-1">🎯</div>
-                        <div class="text-sm font-bold text-white">{activeGoals.length}</div>
-                        <div class="text-[8px] text-white/40 font-mono mt-0.5">GOALS</div>
+                        <div class="text-sm mb-0.5">🎯</div>
+                        <div class="text-[10px] font-bold text-white">{activeGoals.length}</div>
+                        <div class="text-[6px] text-white/40 font-mono mt-0.5">GOALS</div>
                     </div>
                 </div>
             </div>
@@ -770,7 +753,16 @@
             transform: translateY(0px);
         }
         50% {
-            transform: translateY(-10px);
+            transform: translateY(-8px);
+        }
+    }
+
+    @keyframes pulse-slow {
+        0%, 100% {
+            opacity: 0.6;
+        }
+        50% {
+            opacity: 1;
         }
     }
 
@@ -790,6 +782,10 @@
 
     :global(.animate-float) {
         animation: float 3s ease-in-out infinite;
+    }
+
+    :global(.animate-pulse-slow) {
+        animation: pulse-slow 3s ease-in-out infinite;
     }
 
     /* Transiciones suaves */
@@ -845,50 +841,13 @@
         pointer-events: none;
     }
 
-    /* Mobile Game Bars */
-    :global(.mobile-game-bar) {
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 0.5rem;
-    }
-
-    :global(.mobile-bar-bg) {
-        width: 100%;
-        height: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-        position: relative;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
-    :global(.mobile-bar-fill) {
-        height: 100%;
-        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        box-shadow: 0 0 8px currentColor;
-    }
-
-    :global(.mobile-bar-fill::after) {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        animation: shimmer 2s infinite;
-    }
-
     /* Mobile Stat Cards */
     :global(.mobile-stat-card) {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(4px);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 0.75rem 0.5rem;
+        border-radius: 6px;
+        padding: 0.35rem 0.25rem;
         text-align: center;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;

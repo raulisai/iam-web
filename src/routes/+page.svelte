@@ -1,10 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
-    import StatsCard from "../lib/components/StatsCard.svelte";
     import ProgressRing from "../lib/components/ProgressRing.svelte";
-    import QuickAction from "../lib/components/QuickAction.svelte";
-    import HealthBar from "../lib/components/HealthBar.svelte";
     import Brain from "../routes/minde/Brain.svelte";
     import Body from "../routes/body/Body.svelte";
     import TasksNowCarousel from "../lib/components/TasksNowCarousel.svelte";
@@ -352,7 +349,7 @@
                     </div>
                     <div class="mobile-stat-card">
                         <div class="text-sm mb-0.5">💤</div>
-                        <div class="text-[10px] font-bold text-white">{sleepScore}%</div>
+                        <div class="text-[10px] font-bold text-white">{sleepScore} hrs</div>
                         <div class="text-[6px] text-white/40 font-mono mt-0.5">SLEEP</div>
                     </div>
                     <div class="mobile-stat-card">

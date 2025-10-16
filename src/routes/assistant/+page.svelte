@@ -48,8 +48,36 @@
       error = "";
 
       // Check voice support
+      // Re-verificar después de montar por si los servicios se crearon antes de window
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       speechSupported = speechRecognition.isSupported();
       ttsSupported = textToSpeech.isSupported();
+      
+      // Debug logs para Android WebView
+      console.log('Speech Recognition supported:', speechSupported);
+      console.log('TTS supported:', ttsSupported);
+      console.log('Window speechSynthesis:', typeof window !== 'undefined' && 'speechSynthesis' in window);
+      
+      // Verificación directa como fallback
+      if (!ttsSupported && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        console.log('TTS debería estar soportado pero el servicio dice que no. Forzando...');
+        ttsSupported = true;
+      }
+      
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        console.log('TTS voices available:', window.speechSynthesis.getVoices().length);
+        
+        // En Android WebView, las voces pueden cargarse después
+        // Escuchamos el evento voiceschanged para actualizar ttsSupported
+        if (window.speechSynthesis.getVoices().length === 0) {
+          window.speechSynthesis.addEventListener('voiceschanged', () => {
+            console.log('Voices loaded! Count:', window.speechSynthesis.getVoices().length);
+            ttsSupported = true;
+            console.log('TTS supported updated:', ttsSupported);
+          }, { once: true });
+        }
+      }
 
       // Check network status (only in browser)
       if (typeof navigator !== "undefined") {
@@ -362,6 +390,7 @@
 
   // Text to Speech - Speak text
   function speakText(text: string) {
+    console.log('speakText called with:', text.substring(0, 50), 'ttsSupported:', ttsSupported);
     if (!ttsSupported) {
       error = "Text-to-speech is not supported in your browser.";
       return;
@@ -621,6 +650,12 @@
         <!-- Voice controls -->
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
+            <!-- Debug indicator -->
+            <div class="text-[10px] text-white/40 px-2 py-1 bg-neutral-800/30 rounded">
+              TTS: {ttsSupported ? '✓' : '✗'} | 
+              Android: {typeof window !== 'undefined' && window.AndroidTTS ? '✓' : '✗'} | 
+              Web: {typeof window !== 'undefined' && 'speechSynthesis' in window ? '✓' : '✗'}
+            </div>
             {#if speechSupported}
               <div class="relative group">
                 <button

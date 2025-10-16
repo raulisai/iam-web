@@ -15,6 +15,13 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	interface Window {
+		AndroidTTS?: {
+			speak: (text: string) => void;
+			stop?: () => void;
+		};
+	}
 }
 
 export {};

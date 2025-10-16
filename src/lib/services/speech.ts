@@ -167,6 +167,11 @@ export class TextToSpeechService {
     }
 
     isSupported(): boolean {
+        // Verificar si existe el bridge nativo de Android
+        if (typeof window !== 'undefined' && (window as any).AndroidTTS) {
+            return true;
+        }
+        // Verificar Web Speech API
         return this.synthesis !== null;
     }
 
@@ -178,58 +183,168 @@ export class TextToSpeechService {
         onEnd?: () => void;
         onError?: (error: any) => void;
     }) {
-        if (!this.synthesis) {
-            console.error('Text-to-speech not supported');
-            return;
-        }
-
         // Stop any ongoing speech
         this.stop();
 
-        this.currentUtterance = new SpeechSynthesisUtterance(text);
-        this.currentUtterance.rate = options?.rate ?? 1.0;
-        this.currentUtterance.pitch = options?.pitch ?? 1.0;
-        this.currentUtterance.volume = options?.volume ?? 1.0;
-        this.currentUtterance.lang = options?.lang ?? 'en-US';
-
-        this.currentUtterance.onstart = () => {
-            this.isSpeaking = true;
-        };
-
-        this.currentUtterance.onend = () => {
-            this.isSpeaking = false;
-            if (options?.onEnd) {
-                options.onEnd();
+        // Priorizar Android TTS nativo si está disponible
+        if (typeof window !== 'undefined' && (window as any).AndroidTTS) {
+            try {
+                console.log('Using Android native TTS for:', text.substring(0, 50));
+                console.log('AndroidTTS object:', (window as any).AndroidTTS);
+                console.log('Calling AndroidTTS.speak()...');
+                this.isSpeaking = true;
+                (window as any).AndroidTTS.speak(text);
+                console.log('AndroidTTS.speak() called successfully');
+                
+                // Simular callback onEnd después de un tiempo estimado
+                const estimatedDuration = text.length * 50; // ~50ms por carácter
+                setTimeout(() => {
+                    this.isSpeaking = false;
+                    if (options?.onEnd) {
+                        options.onEnd();
+                    }
+                }, estimatedDuration);
+                
+                return;
+            } catch (error) {
+                console.error('Error using Android TTS:', error);
+                this.isSpeaking = false;
+                if (options?.onError) {
+                    options.onError(error);
+                }
+                return;
             }
-        };
+        }
 
-        this.currentUtterance.onerror = (event) => {
-            this.isSpeaking = false;
-            console.error('Speech synthesis error:', event);
+        // Fallback a Web Speech API
+        if (!this.synthesis) {
+            console.error('Text-to-speech not supported');
             if (options?.onError) {
-                options.onError(event);
+                options.onError(new Error('TTS not supported'));
             }
-        };
+            return;
+        }
 
-        this.synthesis.speak(this.currentUtterance);
+        try {
+            // En Android WebView, las voces pueden no estar disponibles inmediatamente
+            // Esperamos a que se carguen si es necesario
+            const voices = this.synthesis.getVoices();
+            if (voices.length === 0) {
+                // Intentar cargar voces primero
+                this.synthesis.addEventListener('voiceschanged', () => {
+                    this.speakInternal(text, options);
+                }, { once: true });
+                
+                // Timeout de seguridad: intentar hablar de todos modos después de 1 segundo
+                setTimeout(() => {
+                    if (!this.isSpeaking) {
+                        this.speakInternal(text, options);
+                    }
+                }, 1000);
+            } else {
+                this.speakInternal(text, options);
+            }
+        } catch (error) {
+            console.error('Error preparing speech:', error);
+            // Intentar hablar de todos modos como fallback
+            this.speakInternal(text, options);
+        }
+    }
+
+    private speakInternal(text: string, options?: {
+        rate?: number;
+        pitch?: number;
+        volume?: number;
+        lang?: string;
+        onEnd?: () => void;
+        onError?: (error: any) => void;
+    }) {
+        // Solo Web Speech API (Android TTS se maneja en speak())
+        if (!this.synthesis) return;
+
+        try {
+            this.currentUtterance = new SpeechSynthesisUtterance(text);
+            this.currentUtterance.rate = options?.rate ?? 1.0;
+            this.currentUtterance.pitch = options?.pitch ?? 1.0;
+            this.currentUtterance.volume = options?.volume ?? 1.0;
+            this.currentUtterance.lang = options?.lang ?? 'en-US';
+
+            this.currentUtterance.onstart = () => {
+                this.isSpeaking = true;
+            };
+
+            this.currentUtterance.onend = () => {
+                this.isSpeaking = false;
+                if (options?.onEnd) {
+                    options.onEnd();
+                }
+            };
+
+            this.currentUtterance.onerror = (event) => {
+                this.isSpeaking = false;
+                console.error('Speech synthesis error:', event);
+                if (options?.onError) {
+                    options.onError(event);
+                }
+            };
+
+            this.synthesis.speak(this.currentUtterance);
+        } catch (error) {
+            console.error('Error calling speak():', error);
+            this.isSpeaking = false;
+            if (options?.onError) {
+                options.onError(error);
+            }
+        }
     }
 
     stop() {
+        // Usar bridge nativo de Android si está disponible
+        if (typeof window !== 'undefined' && (window as any).AndroidTTS) {
+            try {
+                // stop() es opcional en Android TTS
+                if (typeof (window as any).AndroidTTS.stop === 'function') {
+                    (window as any).AndroidTTS.stop();
+                } else {
+                    console.log('AndroidTTS.stop() not available, TTS will finish naturally');
+                }
+            } catch (error) {
+                console.error('Error stopping Android TTS:', error);
+            } finally {
+                this.isSpeaking = false;
+            }
+            return;
+        }
+        
+        // Fallback a Web Speech API
         if (this.synthesis) {
-            this.synthesis.cancel();
-            this.isSpeaking = false;
+            try {
+                this.synthesis.cancel();
+            } catch (error) {
+                console.error('Error stopping speech:', error);
+            } finally {
+                this.isSpeaking = false;
+            }
         }
     }
 
     pause() {
         if (this.synthesis && this.isSpeaking) {
-            this.synthesis.pause();
+            try {
+                this.synthesis.pause();
+            } catch (error) {
+                console.error('Error pausing speech:', error);
+            }
         }
     }
 
     resume() {
         if (this.synthesis) {
-            this.synthesis.resume();
+            try {
+                this.synthesis.resume();
+            } catch (error) {
+                console.error('Error resuming speech:', error);
+            }
         }
     }
 
@@ -239,7 +354,12 @@ export class TextToSpeechService {
 
     getVoices(): SpeechSynthesisVoice[] {
         if (!this.synthesis) return [];
-        return this.synthesis.getVoices();
+        try {
+            return this.synthesis.getVoices();
+        } catch (error) {
+            console.error('Error getting voices:', error);
+            return [];
+        }
     }
 }
 

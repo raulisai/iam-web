@@ -6,10 +6,9 @@ import {
 	deleteGoalTask,
 	createTaskOccurrence,
 	fetchTaskOccurrences,
-	fetchCompletedTaskIds,
-	type GoalTask,
-	type TaskOccurrence
+	fetchCompletedTaskIds
 } from '../services/goalTasks';
+import type { GoalTask, TaskOccurrence } from '../types';
 import { getAuthStore } from './auth.svelte';
 
 /**

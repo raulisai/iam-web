@@ -1,26 +1,6 @@
 import { BACKEND_URL } from '../config';
+import type { Goal, CreateGoalData } from '../types';
 
-/**
- * Goal type definition
- */
-export type Goal = {
-	id: string;
-	title: string;
-	description?: string;
-	type: 'short' | 'medium' | 'long';
-	desc_short?: string;
-	metric_key: string;
-	target_value: number;
-	progress: number;
-	start_date: string;
-	end_date?: string;
-	is_active: boolean;
-	user_id?: string;
-	created_at?: string;
-	// ...other properties if any
-};
-
-export type CreateGoalData = Omit<Goal, 'id' | 'progress' | 'start_date' | 'end_date'>;
 
 /**
  * Fetch all goals for authenticated user

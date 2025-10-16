@@ -15,6 +15,7 @@
     import { slide } from 'svelte/transition';
     import { cubicOut } from 'svelte/easing';
     import { fetchGoalTasks, fetchCompletedTaskIds } from '../services/goalTasks';
+    import type { GoalTask } from '../types';
     import { getAuthStore } from '../stores/auth.svelte';
     
     export let goals: Goal[] = [];

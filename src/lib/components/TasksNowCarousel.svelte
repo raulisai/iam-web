@@ -7,10 +7,9 @@
 		formatDuration,
 		getTaskTypeColor,
 		getTaskTypeIcon,
-		getTaskTypeLabel,
-		type TasksNowResponse,
-		type TaskNow 
+		getTaskTypeLabel
 	} from '$lib/services/time-optimizer';
+	import type { TasksNowResponse, TaskNow } from '$lib/types';
 
 	// Props
 	interface Props {

@@ -2,7 +2,7 @@
     import { createEventDispatcher, onMount } from 'svelte';
     import { scale, fade } from 'svelte/transition';
     import { quintOut } from 'svelte/easing';
-    import type { TaskRecommendation } from '$lib/services/recommendations';
+    import type { TaskRecommendation } from '$lib/types';
     
     interface Props {
         isOpen: boolean;

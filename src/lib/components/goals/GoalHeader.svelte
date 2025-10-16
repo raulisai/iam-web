@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Goal } from '../../services/goals';
+    import type { Goal } from '../../types';
 
     interface Props {
         goal: Goal;

@@ -1,31 +1,5 @@
 import { apiCall } from '$lib/config';
-
-export interface TaskTemplate {
-	id?: string;
-	key: string;
-	name: string;
-	category: 'mind' | 'body';
-	estimated_minutes?: number;
-	difficulty?: number;
-	reward_xp?: number;
-	default_params?: Record<string, any>;
-	created_by?: string;
-	desc?: string;
-	created_at?: string;
-	updated_at?: string;
-}
-
-export interface CreateTaskTemplateData {
-	key: string;
-	name: string;
-	category: 'mind' | 'body';
-	desc?: string;
-	estimated_minutes?: number;
-	difficulty?: number;
-	reward_xp?: number;
-	default_params?: Record<string, any>;
-	created_by?: string;
-}
+import type { TaskTemplate, CreateTaskTemplateData } from '../types/task-template';
 
 /**
  * Get all task templates

@@ -6,8 +6,9 @@
 	import { initializeAuthStore } from '$lib/stores/auth.svelte';
 	import { createUserProfile, getUserProfile } from '$lib/services/profile';
 	import type { UserProfile } from '$lib/types';
-	import { createBotRule, type CreateBotRuleData } from '$lib/services/bot_rules';
-	import { createTaskTemplate, type CreateTaskTemplateData } from '$lib/services/task_templates';
+	import { createBotRule } from '$lib/services/bot_rules';
+	import { createTaskTemplate } from '$lib/services/task_templates';
+	import type { CreateBotRuleData, CreateTaskTemplateData } from '$lib/types';
 	import { generateBotRules, getRecommendedTemplates, calculateXP } from '$lib/utils/onboarding';
 
 	const authStore = initializeAuthStore();
@@ -467,8 +468,9 @@
 						
 						<!-- Hours Available -->
 						<div>
-							<label class="block text-sm font-medium mb-2">Horas Disponibles por Semana</label>
+							<label for="hours-available" class="block text-sm font-medium mb-2">Horas Disponibles por Semana</label>
 							<input 
+								id="hours-available"
 								type="number" 
 								bind:value={profileData.hours_available_to_week}
 								min="1"
@@ -479,8 +481,9 @@
 						
 						<!-- Work Schedule -->
 						<div>
-							<label class="block text-sm font-medium mb-2">Horario de Trabajo</label>
+							<label for="work-schedule" class="block text-sm font-medium mb-2">Horario de Trabajo</label>
 							<input 
+								id="work-schedule"
 								type="text" 
 								bind:value={profileData.work_schedules}
 								placeholder="9:00-17:00"

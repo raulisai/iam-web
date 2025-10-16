@@ -1,24 +1,5 @@
 import { apiCall } from '$lib/config';
-
-export interface BotRule {
-	id?: string;
-	rule_key: string;
-	name: string;
-	descr?: string;
-	condition: Record<string, any>;
-	action: Record<string, any>;
-	is_active?: boolean;
-	created_at?: string;
-	updated_at?: string;
-}
-
-export interface CreateBotRuleData {
-	name: string;
-	condition: Record<string, any>;
-	action: Record<string, any>;
-	priority?: number;
-	active?: boolean;
-}
+import type { BotRule, CreateBotRuleData } from '../types/bot-rule';
 
 /**
  * Get all bot rules for authenticated user

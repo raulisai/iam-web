@@ -6,10 +6,9 @@
     import { initializeGoalsStore } from '../../../lib/stores/goals.svelte';
     import { initializeTasksStore } from '../../../lib/stores/tasks.svelte';
     import { 
-        fetchTaskRecommendations,
-        type TaskRecommendation,
-        type GoalTask
+        fetchTaskRecommendations
     } from '../../../lib/services/goalTasks';
+    import type { GoalTaskRecommendation, GoalTask } from '../../../lib/types';
     
     // Components
     import GoalHeader from '../../../lib/components/goals/GoalHeader.svelte';
@@ -33,7 +32,7 @@
     let isLoadingRecommendations = $state(false);
     let error = $state('');
     let successMessage = $state('');
-    let recommendations: TaskRecommendation[] = $state([]);
+    let recommendations: GoalTaskRecommendation[] = $state([]);
     let showDeleteConfirm = $state(false);
     let showTaskFormModal = $state(false);
     let taskFormMode: 'create' | 'edit' = $state('create');
@@ -214,7 +213,7 @@
         deletingTask = null;
     }
 
-    async function handleAddRecommendation(recommendation: TaskRecommendation) {
+    async function handleAddRecommendation(recommendation: GoalTaskRecommendation) {
         try {
             const taskData: GoalTask = {
                 title: recommendation.title,

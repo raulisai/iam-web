@@ -3,8 +3,9 @@
 	import { goto } from '$app/navigation';
 	import { initializeAuthStore } from '$lib/stores/auth.svelte';
 	import { getUserProfile, saveOrUpdateUserProfile } from '$lib/services/profile';
-	import { createBotRule, type CreateBotRuleData } from '$lib/services/bot_rules';
-	import { createTaskTemplate, type CreateTaskTemplateData } from '$lib/services/task_templates';
+	import { createBotRule } from '$lib/services/bot_rules';
+	import { createTaskTemplate } from '$lib/services/task_templates';
+	import type { CreateBotRuleData, CreateTaskTemplateData } from '$lib/types';
 	import { generateBotRules, getRecommendedTemplates } from '$lib/utils/onboarding';
 	
 	// Components

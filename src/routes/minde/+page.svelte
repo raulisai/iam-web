@@ -7,9 +7,10 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { getAuthContext } from '$lib/stores/auth.svelte';
-    import { getMindTasks, completeTask, type Task } from '$lib/services/tasks';
-    import { getLatestSnapshot, type PerformanceSnapshot } from '$lib/services/stats';
-    import { getMindRecommendations, createTaskFromRecommendation, createCustomTask, type TaskRecommendation } from '$lib/services/recommendations';
+    import { getMindTasks, completeTask } from '$lib/services/tasks';
+    import { getLatestSnapshot } from '$lib/services/stats';
+    import { getMindRecommendations, createTaskFromRecommendation, createCustomTask } from '$lib/services/recommendations';
+    import type { Task, PerformanceSnapshot, TaskRecommendation } from '$lib/types';
     import { toastStore } from '$lib/stores/toast.svelte';
 
     let fillLevel = $state(0);

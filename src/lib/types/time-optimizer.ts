@@ -4,7 +4,7 @@
  * Shared type definitions for the time optimizer/scheduler system
  */
 
-export type TaskType = 'body' | 'mind' | 'goal';
+export type OptimizerTaskType = 'body' | 'mind' | 'goal';
 export type TimeSlot = 'morning' | 'afternoon' | 'evening';
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -25,7 +25,7 @@ export interface TaskNow {
 	description: string;
 	
 	/** Task type/category */
-	type: TaskType;
+	type: OptimizerTaskType;
 	
 	/** Estimated duration in minutes */
 	estimated_duration_minutes: number;
@@ -162,7 +162,7 @@ export interface TaskTypeConfig {
 /**
  * Map of task types to their display configs
  */
-export const TASK_TYPE_CONFIGS: Record<TaskType, TaskTypeConfig> = {
+export const TASK_TYPE_CONFIGS: Record<OptimizerTaskType, TaskTypeConfig> = {
 	goal: {
 		label: 'Goal',
 		icon: '🎯',

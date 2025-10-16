@@ -3,9 +3,9 @@ import {
 	fetchGoals, 
 	createGoal, 
 	updateGoal, 
-	deleteGoal,
-	type Goal 
+	deleteGoal
 } from '../services/goals';
+import type { Goal } from '../types';
 import { getAuthStore } from './auth.svelte';
 
 /**

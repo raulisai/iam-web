@@ -5,7 +5,7 @@
     import StatsCard from '../../lib/components/StatsCard.svelte';
     import AddGoalForm from './AddGoalForm.svelte';
     import { initializeGoalsStore } from '../../lib/stores/goals.svelte';
-    import type { Goal } from '../../lib/services/goals';
+    import type { Goal } from '../../lib/types';
 
     const goalsStore = initializeGoalsStore();
     

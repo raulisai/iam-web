@@ -2,7 +2,8 @@
     import { createEventDispatcher } from 'svelte';
     import { fade, fly, scale, slide } from 'svelte/transition';
     import { cubicOut, elasticOut } from 'svelte/easing';
-    import { fetchTaskRecommendations, type GoalTask, type TaskRecommendation } from '../../lib/services/goalTasks';
+    import { fetchTaskRecommendations } from '../../lib/services/goalTasks';
+    import type { GoalTask, GoalTaskRecommendation } from '../../lib/types';
     import { getAuthStore } from '../../lib/stores/auth.svelte';
 
     type GoalType = 'short' | 'medium' | 'long';
@@ -156,7 +157,7 @@
     let error = '';
     let selectedPreset: GoalPreset | null = null;
     let tasks: ExtendedGoalTask[] = []; // Change the type here
-    let recommendedTasks: TaskRecommendation[] = [];
+    let recommendedTasks: GoalTaskRecommendation[] = [];
     let isLoadingRecommendations = false;
     let showNewTaskForm = false;
     let editingTaskIndex: number | null = null;
@@ -517,7 +518,7 @@
         }
     }
 
-    function addRecommendedTask(task: TaskRecommendation) {
+    function addRecommendedTask(task: GoalTaskRecommendation) {
         // Type assertion to ensure compatibility
         tasks = [...tasks, { ...task, isRecommended: true } as ExtendedGoalTask];
         recommendedTasks = recommendedTasks.filter(rt => rt !== task);

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { GoalTask } from '../../services/goalTasks';
+    import type { GoalTask } from '../../types';
     
     interface Props {
         isOpen: boolean;

@@ -1,4 +1,10 @@
 import { BACKEND_URL } from '../config';
+import type {
+	GoalTask,
+	GoalTaskRecommendation,
+	GoalTaskRecommendationResponse,
+	TaskOccurrence
+} from '../types';
 
 /**
  * Función de utilidad para realizar solicitudes HTTP con reintentos
@@ -36,53 +42,6 @@ async function withRetry<T>(
 	throw lastError;
 }
 
-export type TaskPriority = 'low' | 'medium' | 'high';
-
-export interface GoalTask {
-	id?: string;
-	title: string;
-	description: string;
-	priority: TaskPriority;
-	estimated_duration?: string;
-	type?: string;
-	required?: boolean;
-	weight?: number;
-	order?: number;
-	schedule_rrule?: string;
-	due_at?: string;
-}
-
-export interface TaskRecommendation extends GoalTask {
-	reason?: string;
-	template_id?: string | null;
-}
-
-export interface TaskRecommendationResponse {
-	success: boolean;
-	goal: {
-		id: string;
-		title: string;
-		description: string;
-	};
-	recommendations: TaskRecommendation[];
-	method: 'ai_powered' | 'pattern_based';
-	generated_at: string;
-	existing_task_count: number;
-	ai_metadata?: {
-		tokens_used: number;
-		model: string;
-	};
-}
-
-export interface TaskOccurrence {
-	id?: string;
-	task_id: string;
-	goal_id: string;
-	user_id?: string;
-	completed_at: string;
-	notes?: string;
-	value?: number;
-}
 
 /**
  * Get AI-powered task recommendations for a goal
@@ -93,7 +52,7 @@ export async function fetchTaskRecommendations(
 	count: number = 5,
 	useAI: boolean = true,
 	context?: any
-): Promise<TaskRecommendationResponse> {
+): Promise<GoalTaskRecommendationResponse> {
 	const params = new URLSearchParams();
 	params.append('use_ai', String(useAI));
 	params.append('count', String(count));

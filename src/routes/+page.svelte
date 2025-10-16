@@ -9,10 +9,10 @@
     import Body from "../routes/body/Body.svelte";
     import TasksNowCarousel from "../lib/components/TasksNowCarousel.svelte";
     import { getAuthContext } from "$lib/stores/auth.svelte";
-    import { getLatestSnapshot, getStatsSummary, type PerformanceSnapshot, type StatsSummary } from "$lib/services/stats";
+    import { getLatestSnapshot, getStatsSummary } from "$lib/services/stats";
     import { getMindTasks, getBodyTasks } from "$lib/services/tasks";
-    import { fetchGoals, type Goal } from "$lib/services/goals";
-    import type { Task } from "$lib/types";
+    import { fetchGoals } from "$lib/services/goals";
+    import type { Task, Goal, PerformanceSnapshot, StatsSummary } from "$lib/types";
 
     // Dashboard data
     let overallScore = $state(0);

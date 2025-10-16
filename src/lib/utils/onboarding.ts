@@ -1,7 +1,6 @@
 // Onboarding Helper Functions
 
-import type { CreateBotRuleData } from '$lib/services/bot_rules';
-import type { CreateTaskTemplateData } from '$lib/services/task_templates';
+import type { CreateBotRuleData, CreateTaskTemplateData } from '$lib/types';
 
 interface ActivityPreference {
 	id: string;

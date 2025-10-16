@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { TaskRecommendation } from '../../services/goalTasks';
+    import type { GoalTaskRecommendation } from '../../types';
 
     interface Props {
-        recommendation: TaskRecommendation;
+        recommendation: GoalTaskRecommendation;
         index: number;
-        onadd?: (recommendation: TaskRecommendation) => void;
+        onadd?: (recommendation: GoalTaskRecommendation) => void;
     }
 
     let { recommendation, index, onadd }: Props = $props();

@@ -1,51 +1,5 @@
 import { BACKEND_URL } from '$lib/config';
-
-// Types based on the API response
-export interface TaskNow {
-	id: string;
-	task_id: string;
-	title: string;
-	description: string;
-	type: 'body' | 'mind' | 'goal';
-	estimated_duration_minutes: number;
-	priority_score: number;
-	urgency_multiplier: number;
-	scheduled_at: string | null;
-	status: string;
-	start_time: string;
-	end_time: string;
-	time_slot: 'morning' | 'afternoon' | 'evening';
-	// Goal-specific fields
-	goal_title?: string;
-	goal_deadline?: string;
-	days_until_deadline?: number;
-	weight?: number;
-}
-
-export interface TasksNowResponse {
-	body_tasks: TaskNow[];
-	goal_tasks: TaskNow[];
-	mind_tasks: TaskNow[];
-	current_time: string;
-	message: string;
-	remaining_hours_in_slot_week: number;
-	remaining_minutes_today: number;
-	remaining_hours_today: number;
-	total_body_tasks: number;
-	total_goal_tasks: number;
-	total_mind_tasks: number;
-	total_time_used_for_tasks: number;
-	remaining_minutes_in_slot_week: number;
-	remaining_after_scheduling: number;
-	utilization_percentage: number;
-	total_available_tasks: number;
-	total_scheduled_tasks: number;
-	user_id: string;
-	is_working_day: boolean;
-	available_hours_today: number;
-	work_hours_today: number;
-	time_dead: number;
-}
+import type { TaskNow, TasksNowResponse } from '../types/time-optimizer';
 
 /**
  * Get optimized tasks for the remaining time today

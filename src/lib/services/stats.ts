@@ -1,46 +1,5 @@
 import { apiCall } from '../config';
-
-interface AuthStore {
-	user: any;
-	isAuthenticated: boolean;
-	isLoading: boolean;
-	getToken(): string | null;
-}
-
-export interface PerformanceSnapshot {
-	id: string;
-	user_id: string;
-	snapshot_at: string;
-	energy: number;
-	stamina: number;
-	strength: number;
-	flexibility: number;
-	attention: number;
-	score_body: number;
-	score_mind: number;
-	model_version: string;
-	calories_burned?: string;
-	steps_daily?: string;
-	heart_rate?: string;
-	sleep_score?: string;
-	inputs?: Record<string, any>;
-}
-
-export interface StatsSummary {
-	count: number;
-	period_days: number;
-	start_date: string;
-	end_date: string;
-	averages: {
-		[key: string]: {
-			avg: number;
-			min: number;
-			max: number;
-			latest: number;
-		};
-	};
-	latest: PerformanceSnapshot;
-}
+import type { AuthStore, PerformanceSnapshot, StatsSummary } from '../types';
 
 /**
  * Obtiene el último snapshot de performance del usuario

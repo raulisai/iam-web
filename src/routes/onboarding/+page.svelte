@@ -361,7 +361,7 @@
 		<div class="fixed right-0 top-1/2 -translate-y-1/2 z-50 md:hidden">
 			{#if fabExpanded}
 				<!-- Expanded State -->
-				<div class="flex flex-col gap-2 items-end pr-3" transition:scale={{ duration: 200, start: 0.5 }}>
+				<div class="flex flex-col gap-2 items-end pr-3">
 					{#if currentStep > 1}
 						<button
 							type="button"
@@ -416,21 +416,21 @@
 				<button
 					type="button"
 					onclick={() => { fabExpanded = true; showFab = true; }}
-					class="relative bg-gradient-to-br from-green-500 to-emerald-600 hover:shadow-green-500/60 transition-all shadow-md shadow-green-500/30 backdrop-blur-md flex items-center justify-center group overflow-hidden hover:opacity-100"
-					class:w-2={!showFab}
-					class:h-16={!showFab}
-					class:w-10={showFab}
-					class:h-24={showFab}
-					class:rounded-l-2xl={!showFab}
-					class:rounded-l-full={showFab}
-					class:opacity-70={showFab}
-					class:opacity-40={!showFab}
+					class="relative bg-gradient-to-br from-green-500 to-emerald-600 hover:shadow-green-500/60 shadow-md shadow-green-500/30 backdrop-blur-md flex items-center justify-center group overflow-hidden hover:opacity-100"
+					style="
+						border-top-right-radius: 0; 
+						border-bottom-right-radius: 0;
+						width: {showFab ? '2.5rem' : '0.5rem'};
+						height: {showFab ? '6rem' : '4rem'};
+						opacity: {showFab ? '0.7' : '0.4'};
+						border-radius: {showFab ? '9999px 0 0 9999px' : '1rem 0 0 1rem'};
+						transition: all 300ms ease-out;
+					"
 					aria-label="Abrir menú de navegación"
-					style="border-top-right-radius: 0; border-bottom-right-radius: 0;"
 				>
 					<!-- Pulse effect on scroll -->
 					{#if showFab}
-						<div class="absolute inset-0 bg-green-400/20 rounded-l-full animate-pulse" style="border-top-right-radius: 0; border-bottom-right-radius: 0;"></div>
+						<div class="absolute inset-0 bg-green-400/20 animate-pulse" style="border-radius: 9999px 0 0 9999px;"></div>
 					{/if}
 					
 					<!-- Icon - Only show when scrolling -->

@@ -13,6 +13,37 @@ interface AuthState {
 	isLoading: boolean;
 }
 
+// Declaración global para la interfaz Android
+declare global {
+	interface Window {
+		AndroidApp?: {
+			saveAuthToken(token: string, userId: string): void;
+		};
+	}
+}
+
+// Función helper para detectar si estamos en Android WebView
+function isAndroidWebView(): boolean {
+	if (typeof window === 'undefined') return false;
+	return typeof window.AndroidApp !== 'undefined' && typeof window.AndroidApp.saveAuthToken === 'function';
+}
+
+// Función helper para enviar el token a Android
+function sendTokenToAndroid(token: string, userId: string): void {
+	if (!isAndroidWebView()) {
+		console.log('Android WebView no detectado, omitiendo sincronización de token');
+		return;
+	}
+
+	try {
+		console.log('Enviando token a Android WebView...');
+		window.AndroidApp!.saveAuthToken(token, userId);
+		console.log('Token enviado exitosamente a Android');
+	} catch (error) {
+		console.error('Error al enviar token a Android:', error);
+	}
+}
+
 class AuthStore {
 	// Svelte 5 $state rune para reactividad
 	user = $state<User | null>(null);
@@ -67,6 +98,9 @@ class AuthStore {
 				// Guardar en localStorage (el token ya está en la cookie httpOnly)
 				localStorage.setItem('user', JSON.stringify(data.user));
 				localStorage.setItem('token', data.token);
+				
+				// Enviar token a Android si está disponible
+				sendTokenToAndroid(data.token, data.user.id);
 				
 				return { success: true };
 			} else {

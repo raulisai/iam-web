@@ -200,23 +200,23 @@
 	out:fly={{ x: -300, duration: 300, easing: quintOut }}
 >
 	<!-- Header Gamificado -->
-	<div class="text-center mb-8">
+	<div class="text-center mb-4 md:mb-8">
 		<div class="inline-block relative">
-			<div class="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full flex items-center justify-center text-lg animate-bounce">
+			<div class="absolute -top-2 -right-2 w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full flex items-center justify-center text-sm md:text-lg animate-bounce">
 				🔔
 			</div>
-			<h2 class="text-4xl md:text-5xl font-black bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-500 bg-clip-text text-transparent mb-2">
+			<h2 class="text-3xl md:text-5xl font-black bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-500 bg-clip-text text-transparent mb-2">
 				Recordatorios Pro
 			</h2>
 		</div>
-		<p class="text-white/70 text-base max-w-2xl mx-auto mb-4">
-			¡Crea hábitos increíbles con recordatorios inteligentes! Automatiza tu éxito 🎯
+		<p class="text-white/70 text-sm md:text-base max-w-2xl mx-auto mb-3 md:mb-4 px-2">
+			¡Crea hábitos increíbles con recordatorios inteligentes! 🎯
 		</p>
-		<div class="flex gap-3 justify-center flex-wrap">
-			<div class="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-2 border-blue-500/40 rounded-2xl px-5 py-2.5 backdrop-blur-sm">
-				<div class="flex items-center gap-2">
-					<span class="text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{reminders.length}</span>
-					<span class="text-white/80 font-semibold">Recordatorios activos</span>
+		<div class="flex gap-2 md:gap-3 justify-center flex-wrap">
+			<div class="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-2 border-blue-500/40 rounded-xl md:rounded-2xl px-3 md:px-5 py-1.5 md:py-2.5 backdrop-blur-sm">
+				<div class="flex items-center gap-1.5 md:gap-2">
+					<span class="text-2xl md:text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{reminders.length}</span>
+					<span class="text-white/80 font-semibold text-sm md:text-base">Recordatorios activos</span>
 				</div>
 			</div>
 		</div>
@@ -273,55 +273,55 @@
 	{/if}
 	
 	<!-- Reminders List -->
-	<div class="space-y-5 mb-8">
+	<div class="space-y-3 md:space-y-5 mb-6 md:mb-8">
 		{#each reminders as reminder, i (reminder.id)}
 			<div 
-				class="relative bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 border-2 border-white/10 rounded-3xl p-6 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all group"
+				class="relative bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 border-2 border-white/10 rounded-2xl md:rounded-3xl p-3 md:p-6 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all group"
 				transition:scale={{ duration: 300, delay: i * 50, easing: backOut }}
 			>
 				<!-- Status Badge -->
-				<div class="absolute -top-3 left-6 px-4 py-1 rounded-full text-xs font-bold shadow-lg {reminder.enabled ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : 'bg-neutral-700 text-white/60'}">
+				<div class="absolute -top-2 md:-top-3 left-3 md:left-6 px-2 md:px-4 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg {reminder.enabled ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : 'bg-neutral-700 text-white/60'}">
 					{reminder.enabled ? '✓ Activo' : '○ Pausado'}
 				</div>
 				
-				<div class="flex flex-col gap-5 mt-2">
+				<div class="flex flex-col gap-3 md:gap-5 mt-2">
 					<!-- Header Row -->
-					<div class="flex items-center gap-4">
+					<div class="flex items-center gap-2 md:gap-4">
 						<div class="flex-shrink-0">
-							<div class="text-6xl group-hover:scale-110 transition-transform">
+							<div class="text-4xl md:text-6xl group-hover:scale-110 transition-transform">
 								{sourceTypeIcons[reminder.source_type]}
 							</div>
 						</div>
 						
-						<div class="flex-1">
+						<div class="flex-1 min-w-0">
 							<input
 								type="text"
 								bind:value={reminder.name}
-								class="w-full bg-transparent border-0 border-b-2 border-white/10 focus:border-blue-500 px-0 py-2 text-xl font-bold text-white focus:outline-none placeholder-white/30"
+								class="w-full bg-transparent border-0 border-b-2 border-white/10 focus:border-blue-500 px-0 py-1 md:py-2 text-base md:text-xl font-bold text-white focus:outline-none placeholder-white/30"
 								placeholder="Nombre del recordatorio"
 							/>
 						</div>
 						
-						<div class="flex gap-2">
+						<div class="flex gap-1.5 md:gap-2 flex-shrink-0">
 							<!-- Toggle -->
 							<button
 								type="button"
 								onclick={() => toggleReminder(reminder)}
-								class="relative w-16 h-9 rounded-full transition-all shadow-lg {reminder.enabled ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-neutral-700'}"
+								class="relative w-12 h-7 md:w-16 md:h-9 rounded-full transition-all shadow-lg {reminder.enabled ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-neutral-700'}"
 								aria-label="{reminder.enabled ? 'Desactivar' : 'Activar'} recordatorio"
 							>
-								<div class="absolute top-1 {reminder.enabled ? 'right-1' : 'left-1'} w-7 h-7 bg-white rounded-full transition-all shadow-md"></div>
+								<div class="absolute top-0.5 md:top-1 {reminder.enabled ? 'right-0.5 md:right-1' : 'left-0.5 md:left-1'} w-6 h-6 md:w-7 md:h-7 bg-white rounded-full transition-all shadow-md"></div>
 							</button>
 							
 							<!-- Delete -->
 							<button
 								type="button"
 								onclick={() => removeReminder(reminder.id)}
-								class="p-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-colors"
+								class="p-1.5 md:p-2 text-red-400 hover:bg-red-500/20 rounded-lg md:rounded-xl transition-colors"
 								title="Eliminar recordatorio"
 								aria-label="Eliminar recordatorio"
 							>
-								<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<svg class="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
 								</svg>
 							</button>
@@ -329,42 +329,42 @@
 					</div>
 					
 					<!-- Frequency and Time Range -->
-					<div class="flex flex-wrap gap-3 items-center">
-						<div class="flex items-center gap-2 bg-blue-500/20 border-2 border-blue-500/30 rounded-xl px-4 py-2.5">
-							<span class="text-white/60 text-sm font-semibold">🔄</span>
+					<div class="flex flex-col sm:flex-row flex-wrap gap-2 md:gap-3 items-start sm:items-center">
+						<div class="flex items-center gap-1.5 md:gap-2 bg-blue-500/20 border-2 border-blue-500/30 rounded-lg md:rounded-xl px-3 md:px-4 py-1.5 md:py-2.5">
+							<span class="text-white/60 text-xs md:text-sm font-semibold">🔄</span>
 							<input
 								type="number"
 								min="1"
 								max="24"
 								bind:value={reminder.times_per_day}
-								class="w-14 bg-transparent border-0 text-center text-white font-bold text-lg focus:outline-none"
+								class="w-10 md:w-14 bg-transparent border-0 text-center text-white font-bold text-sm md:text-lg focus:outline-none"
 							/>
-							<span class="text-white/80 font-semibold text-sm">veces/día</span>
+							<span class="text-white/80 font-semibold text-xs md:text-sm">veces/día</span>
 						</div>
 						
-						<div class="flex items-center gap-2">
-							<span class="text-white/60 text-sm font-semibold">⏰</span>
+						<div class="flex items-center gap-1.5 md:gap-2">
+							<span class="text-white/60 text-xs md:text-sm font-semibold">⏰</span>
 							<input
 								type="time"
 								bind:value={reminder.start_time}
-								class="bg-neutral-800/50 border-2 border-white/20 rounded-xl px-3 py-2 text-white font-semibold focus:border-blue-500 focus:outline-none"
+								class="bg-neutral-800/50 border-2 border-white/20 rounded-lg md:rounded-xl px-2 md:px-3 py-1 md:py-2 text-sm md:text-base text-white font-semibold focus:border-blue-500 focus:outline-none"
 							/>
-							<span class="text-white/40">-</span>
+							<span class="text-white/40 text-sm">-</span>
 							<input
 								type="time"
 								bind:value={reminder.end_time}
-								class="bg-neutral-800/50 border-2 border-white/20 rounded-xl px-3 py-2 text-white font-semibold focus:border-blue-500 focus:outline-none"
+								class="bg-neutral-800/50 border-2 border-white/20 rounded-lg md:rounded-xl px-2 md:px-3 py-1 md:py-2 text-sm md:text-base text-white font-semibold focus:border-blue-500 focus:outline-none"
 							/>
 						</div>
 					</div>
 					
 					<!-- Days -->
-					<div class="flex gap-1.5">
+					<div class="flex gap-1 md:gap-1.5 flex-wrap">
 						{#each daysOfWeek as day}
 							<button
 								type="button"
 								onclick={() => toggleDay(reminder, day.id)}
-								class="w-11 h-11 rounded-full border-2 transition-all text-sm font-bold shadow-md
+								class="w-8 h-8 md:w-11 md:h-11 rounded-full border-2 transition-all text-xs md:text-sm font-bold shadow-md
 									{reminder.days.includes(day.id) 
 										? 'border-blue-500 bg-gradient-to-br from-blue-500 to-cyan-500 text-white scale-110' 
 										: 'border-white/20 text-white/40 hover:border-white/40 hover:scale-105'}"
@@ -377,44 +377,52 @@
 					</div>
 					
 					<!-- Notifications -->
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
 						<input
 							type="text"
 							bind:value={reminder.notification_title}
-							class="bg-neutral-800/50 border-2 border-white/10 rounded-xl px-4 py-3 text-white font-semibold focus:border-blue-500/50 focus:outline-none placeholder-white/30"
-							placeholder="💬 Título de notificación"
+							class="bg-neutral-800/50 border-2 border-white/10 rounded-lg md:rounded-xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-white font-semibold focus:border-blue-500/50 focus:outline-none placeholder-white/30"
+							placeholder="💬 Título"
 						/>
 						<input
 							type="text"
 							bind:value={reminder.notification_body}
-							class="bg-neutral-800/50 border-2 border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500/50 focus:outline-none placeholder-white/30"
+							class="bg-neutral-800/50 border-2 border-white/10 rounded-lg md:rounded-xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-white focus:border-blue-500/50 focus:outline-none placeholder-white/30"
 							placeholder="✉️ Mensaje"
 						/>
 					</div>
 					
-					<!-- Options Row -->
-					<div class="flex flex-wrap gap-3 pt-2 border-t border-white/10">
-						<label class="flex items-center gap-2 cursor-pointer group/opt">
-							<input type="checkbox" bind:checked={reminder.sound_enabled} class="w-5 h-5 rounded-lg accent-blue-500" />
-							<span class="text-sm text-white/70 group-hover/opt:text-white transition-colors">🔊 Sonido</span>
-						</label>
-						
-						<label class="flex items-center gap-2 cursor-pointer group/opt">
-							<input type="checkbox" bind:checked={reminder.vibration_enabled} class="w-5 h-5 rounded-lg accent-blue-500" />
-							<span class="text-sm text-white/70 group-hover/opt:text-white transition-colors">📳 Vibración</span>
-						</label>
-						
-						<div class="flex items-center gap-2">
-							<span class="text-sm text-white/60">Prioridad:</span>
-							<select bind:value={reminder.priority} class="bg-neutral-800 border border-white/20 rounded-lg px-3 py-1 text-sm text-white focus:border-blue-500 focus:outline-none">
-								<option value="min">Mín</option>
-								<option value="low">Baja</option>
-								<option value="default">Normal</option>
-								<option value="high">Alta</option>
-								<option value="max">Máx</option>
-							</select>
+					<!-- Options Row - Collapsible on mobile -->
+					<details class="group/details">
+						<summary class="flex items-center gap-2 cursor-pointer text-sm text-white/60 hover:text-white/80 transition-colors py-1 md:hidden">
+							<svg class="w-4 h-4 transition-transform group-open/details:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M9 18l6-6-6-6"/>
+							</svg>
+							<span>Opciones avanzadas</span>
+						</summary>
+						<div class="flex flex-wrap gap-2 md:gap-3 pt-2 border-t border-white/10 mt-2">
+							<label class="flex items-center gap-1.5 md:gap-2 cursor-pointer group/opt">
+								<input type="checkbox" bind:checked={reminder.sound_enabled} class="w-4 h-4 md:w-5 md:h-5 rounded-lg accent-blue-500" />
+								<span class="text-xs md:text-sm text-white/70 group-hover/opt:text-white transition-colors">🔊 Sonido</span>
+							</label>
+							
+							<label class="flex items-center gap-1.5 md:gap-2 cursor-pointer group/opt">
+								<input type="checkbox" bind:checked={reminder.vibration_enabled} class="w-4 h-4 md:w-5 md:h-5 rounded-lg accent-blue-500" />
+								<span class="text-xs md:text-sm text-white/70 group-hover/opt:text-white transition-colors">📳 Vibración</span>
+							</label>
+							
+							<div class="flex items-center gap-1.5 md:gap-2">
+								<span class="text-xs md:text-sm text-white/60">Prioridad:</span>
+								<select bind:value={reminder.priority} class="bg-neutral-800 border border-white/20 rounded-lg px-2 md:px-3 py-1 text-xs md:text-sm text-white focus:border-blue-500 focus:outline-none">
+									<option value="min">Mín</option>
+									<option value="low">Baja</option>
+									<option value="default">Normal</option>
+									<option value="high">Alta</option>
+									<option value="max">Máx</option>
+								</select>
+							</div>
 						</div>
-					</div>
+					</details>
 				</div>
 			</div>
 		{/each}
@@ -423,23 +431,23 @@
 		<button
 			type="button"
 			onclick={addReminder}
-			class="w-full border-3 border-dashed border-blue-500/30 rounded-3xl p-8 hover:border-blue-500 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-cyan-500/10 transition-all group hover:scale-105"
+			class="w-full border-2 md:border-3 border-dashed border-blue-500/30 rounded-2xl md:rounded-3xl p-4 md:p-8 hover:border-blue-500 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-cyan-500/10 transition-all group hover:scale-105 mb-4 md:mb-0"
 		>
-			<div class="flex items-center justify-center gap-4">
-				<div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-					<svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+			<div class="flex items-center justify-center gap-2 md:gap-4">
+				<div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+					<svg class="w-5 h-5 md:w-7 md:h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 						<path d="M12 5v14M5 12h14"/>
 					</svg>
 				</div>
-				<span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-cyan-300">
+				<span class="text-base md:text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-cyan-300">
 					Crear Recordatorio Personalizado
 				</span>
 			</div>
 		</button>
 	</div>
 	
-	<!-- Navigation -->
-	<div class="flex justify-between gap-4">
+	<!-- Navigation - Hidden on mobile (using floating nav) -->
+	<div class="hidden md:flex justify-between gap-4">
 		<button
 			type="button"
 			onclick={onBack}

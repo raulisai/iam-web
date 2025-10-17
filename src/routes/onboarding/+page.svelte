@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { scale } from 'svelte/transition';
 	import { initializeAuthStore } from '$lib/stores/auth.svelte';
 	import { getUserProfile, saveOrUpdateUserProfile } from '$lib/services/profile';
 	import { createBotRule } from '$lib/services/bot_rules';
@@ -31,8 +32,9 @@
 	
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
-	let hasExistingProfile = $state(false);
 	let isLoadingProfile = $state(true);
+	let hasExistingProfile = $state(false);
+	let fabExpanded = $state(false);
 	
 	// Step 1: Profile Data
 	let profileData = $state({
@@ -321,9 +323,78 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white py-4 md:py-12 px-3 md:px-4">
-	<div class="max-w-7xl mx-auto pb-safe"  style="padding-bottom: env(safe-area-inset-bottom);">
+	<div class="max-w-7xl mx-auto pb-4">
 		<!-- Progress Bar -->
 		<ProgressBar {currentStep} {totalSteps} {stepLabels} onStepClick={goToStep} />
+		
+		<!-- Floating Action Button (FAB) - Mobile -->
+		<div class="fixed right-4 top-1/2 -translate-y-1/2 z-50 md:hidden">
+			{#if fabExpanded}
+				<!-- Expanded State -->
+				<div class="flex flex-col gap-3 items-end" transition:scale={{ duration: 200 }}>
+					{#if currentStep > 1}
+						<button
+							type="button"
+							onclick={() => { prevStep(); fabExpanded = false; }}
+							class="flex items-center gap-2 px-4 py-3 bg-neutral-800/95 border-2 border-white/20 rounded-full hover:scale-105 transition-all backdrop-blur-md shadow-xl"
+						>
+							<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<path d="M19 12H5M12 19l-7-7 7-7"/>
+							</svg>
+							<span class="font-semibold text-sm">Atrás</span>
+						</button>
+					{/if}
+					
+					{#if currentStep < totalSteps}
+						<button
+							type="button"
+							onclick={() => { nextStep(); fabExpanded = false; }}
+							class="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full hover:scale-105 transition-all shadow-xl shadow-green-500/40 backdrop-blur-md"
+						>
+							<span class="font-bold text-sm">Continuar</span>
+							<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<path d="M5 12h14M12 5l7 7-7 7"/>
+							</svg>
+						</button>
+					{:else}
+						<button
+							type="button"
+							onclick={() => { handleComplete(); fabExpanded = false; }}
+							disabled={isSubmitting}
+							class="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full hover:scale-105 transition-all shadow-xl shadow-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-md"
+						>
+							<span class="font-bold text-sm">
+								{isSubmitting ? 'Guardando...' : '✨ Finalizar'}
+							</span>
+						</button>
+					{/if}
+					
+					<!-- Close button -->
+					<button
+						type="button"
+						onclick={() => fabExpanded = false}
+						class="w-14 h-14 bg-red-500/90 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-xl shadow-red-500/40 backdrop-blur-md"
+						aria-label="Cerrar menú"
+					>
+						<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<path d="M18 6L6 18M6 6l12 12"/>
+						</svg>
+					</button>
+				</div>
+			{:else}
+				<!-- Collapsed State -->
+				<button
+					type="button"
+					onclick={() => fabExpanded = true}
+					class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-2xl shadow-green-500/50 backdrop-blur-md animate-pulse"
+					aria-label="Abrir menú de navegación"
+				>
+					<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<path d="M5 12h14M12 5l7 7-7 7"/>
+					</svg>
+				</button>
+			{/if}
+		</div>
 		
 		<!-- Existing Profile Notice -->
 		{#if hasExistingProfile && !isLoadingProfile}

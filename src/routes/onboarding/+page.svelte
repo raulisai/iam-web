@@ -13,15 +13,21 @@
 	import StepProfileInfo from './StepProfileInfo.svelte';
 	import StepActivities from './StepActivities.svelte';
 	import StepSchedules from './StepSchedules.svelte';
+	import StepAlarms from './StepAlarms.svelte';
+	import StepReminders from './StepReminders.svelte';
 	import StepTemplates from './StepTemplates.svelte';
 	import StepCustomTasks from './StepCustomTasks.svelte';
+	
+	// Services
+	import { createRoutineAlarm } from '$lib/services/routine_alarms';
+	import { createRoutineReminder } from '$lib/services/routine_reminders';
 	
 	const authStore = initializeAuthStore();
 	
 	// State
 	let currentStep = $state(1);
-	const totalSteps = 5;
-	const stepLabels = ['Perfil', 'Actividades', 'Horarios', 'Templates', 'Personalizar'];
+	const totalSteps = 7;
+	const stepLabels = ['Perfil', 'Actividades', 'Horarios', 'Alarmas', 'Recordatorios', 'Templates', 'Personalizar'];
 	
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
@@ -53,7 +59,14 @@
 	let recommendedTemplates = $state<any[]>([]);
 	let selectedTemplateIds = $state<string[]>([]);
 	
-	// Step 5: Custom Tasks
+	// Step 4: Alarms
+	let alarms = $state<any[]>([]);
+	
+	// Step 5: Reminders
+	let reminders = $state<any[]>([]);
+	
+	// Step 6: Templates (moved from step 4)
+	// Step 7: Custom Tasks (moved from step 5)
 	let customTasks = $state<any[]>([]);
 	
 	// Check authentication and load existing profile
@@ -119,6 +132,16 @@
 	
 	// Step 3 -> Step 4
 	function handleSchedulesNext() {
+		nextStep();
+	}
+	
+	// Step 4 -> Step 5
+	function handleAlarmsNext() {
+		nextStep();
+	}
+	
+	// Step 5 -> Step 6
+	function handleRemindersNext() {
 		// Generate recommended templates based on selected activities
 		recommendedTemplates = getRecommendedTemplates(selectedActivities);
 		// Don't pre-select any templates - let user choose
@@ -126,7 +149,7 @@
 		nextStep();
 	}
 	
-	// Step 4 -> Step 5
+	// Step 6 -> Step 7
 	function handleTemplatesNext() {
 		nextStep();
 	}
@@ -191,7 +214,51 @@
 				}
 			}
 			
-			// 3. Create selected templates
+			// 3. Create alarms
+			console.log(`⏰ Creando ${alarms.length} alarmas...`);
+			for (const alarm of alarms) {
+				if (alarm.enabled) {
+					try {
+						await createRoutineAlarm(authStore, {
+							name: alarm.name,
+							alarm_time: alarm.time,
+							days_of_week: alarm.days,
+							notification_title: alarm.notification_title,
+							notification_body: alarm.notification_body,
+							source_type: alarm.source_type,
+							is_active: alarm.enabled
+						});
+						console.log('✅ Alarma creada:', alarm.name);
+					} catch (err) {
+						console.error('❌ Error creando alarma:', alarm.name, err);
+					}
+				}
+			}
+			
+			// 4. Create reminders
+			console.log(`🔔 Creando ${reminders.length} recordatorios...`);
+			for (const reminder of reminders) {
+				if (reminder.enabled) {
+					try {
+						await createRoutineReminder(authStore, {
+							name: reminder.name,
+							times_per_day: reminder.times_per_day,
+							start_time: reminder.start_time,
+							end_time: reminder.end_time,
+							days_of_week: reminder.days,
+							notification_title: reminder.notification_title,
+							notification_body: reminder.notification_body,
+							source_type: reminder.source_type,
+							is_active: reminder.enabled
+						});
+						console.log('✅ Recordatorio creado:', reminder.name);
+					} catch (err) {
+						console.error('❌ Error creando recordatorio:', reminder.name, err);
+					}
+				}
+			}
+			
+			// 5. Create selected templates
 			const selectedTemplateData = recommendedTemplates.filter(t => 
 				selectedTemplateIds.includes(t.id)
 			);
@@ -209,7 +276,7 @@
 				});
 			}
 			
-			// 4. Create custom tasks
+			// 6. Create custom tasks
 			for (const task of customTasks) {
 				await createTaskTemplate(authStore, {
 					key: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -237,10 +304,10 @@
 	<title>Onboarding - IAM</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white py-12 px-4">
-	<div class="max-w-7xl mx-auto">
+<div class="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white py-4 md:py-12 px-3 md:px-4">
+	<div class="max-w-7xl mx-auto pb-safe"  style="padding-bottom: env(safe-area-inset-bottom);">
 		<!-- Progress Bar -->
-		<ProgressBar {currentStep} {totalSteps} {stepLabels} />
+		<ProgressBar {currentStep} {totalSteps} {stepLabels} onStepClick={goToStep} />
 		
 		<!-- Existing Profile Notice -->
 		{#if hasExistingProfile && !isLoadingProfile}
@@ -299,13 +366,25 @@
 					onBack={prevStep}
 				/>
 			{:else if currentStep === 4}
+				<StepAlarms
+					bind:alarms={alarms}
+					onNext={handleAlarmsNext}
+					onBack={prevStep}
+				/>
+			{:else if currentStep === 5}
+				<StepReminders
+					bind:reminders={reminders}
+					onNext={handleRemindersNext}
+					onBack={prevStep}
+				/>
+			{:else if currentStep === 6}
 				<StepTemplates
 					{recommendedTemplates}
 					bind:selectedTemplateIds={selectedTemplateIds}
 					onNext={handleTemplatesNext}
 					onBack={prevStep}
 				/>
-			{:else if currentStep === 5}
+			{:else if currentStep === 7}
 				<StepCustomTasks
 					bind:customTasks={customTasks}
 					onComplete={handleComplete}

@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
+	import { initializeAuthStore } from '$lib/stores/auth.svelte';
+	import { getTaskTemplates } from '$lib/services/task_templates';
+	import type { TaskTemplate } from '$lib/types/task-template';
 	
 	interface Props {
 		selectedActivities: string[];
@@ -10,18 +14,94 @@
 	
 	let { selectedActivities = $bindable(), onNext, onBack }: Props = $props();
 	
-	const activities = [
-		{ id: 'meditation', icon: '🧘', label: 'Meditación', color: 'purple', desc: 'Calma mental' },
-		{ id: 'exercise', icon: '💪', label: 'Ejercicio', color: 'orange', desc: 'Fuerza física' },
-		{ id: 'reading', icon: '📚', label: 'Lectura', color: 'blue', desc: 'Conocimiento' },
-		{ id: 'yoga', icon: '🧘‍♀️', label: 'Yoga', color: 'green', desc: 'Flexibilidad' },
-		{ id: 'running', icon: '🏃', label: 'Running', color: 'red', desc: 'Cardio' },
-		{ id: 'swimming', icon: '🏊', label: 'Natación', color: 'cyan', desc: 'Resistencia' },
-		{ id: 'cycling', icon: '🚴', label: 'Ciclismo', color: 'yellow', desc: 'Velocidad' },
-		{ id: 'walking', icon: '🚶', label: 'Caminar', color: 'teal', desc: 'Movilidad' },
-		{ id: 'stretching', icon: '🤸', label: 'Estiramiento', color: 'pink', desc: 'Flexibilidad' },
-		{ id: 'nutrition', icon: '🥗', label: 'Nutrición', color: 'lime', desc: 'Salud' }
-	];
+	const authStore = initializeAuthStore();
+	let isLoading = $state(true);
+	let taskTemplates = $state<TaskTemplate[]>([]);
+	let activities = $state<any[]>([]);
+	
+	// Mapeo de iconos por categoría y palabras clave
+	const iconMap: Record<string, string> = {
+		meditation: '🧘',
+		exercise: '💪',
+		reading: '📚',
+		yoga: '🧘‍♀️',
+		running: '🏃',
+		swimming: '🏊',
+		cycling: '🚴',
+		walking: '🚶',
+		stretching: '🤸',
+		nutrition: '🥗',
+		learning: '📖',
+		creativity: '🎨',
+		mindfulness: '🧠',
+		breathing: '🌬️',
+		sleep: '😴',
+		hydration: '💧',
+		default_mind: '🧠',
+		default_body: '💪'
+	};
+	
+	const colorMap: Record<string, string> = {
+		mind: 'purple',
+		body: 'orange'
+	};
+	
+	function getIconForTemplate(template: TaskTemplate): string {
+		const key = template.key.toLowerCase();
+		const name = template.name.toLowerCase();
+		
+		// Buscar coincidencia exacta en el key
+		if (iconMap[key]) return iconMap[key];
+		
+		// Buscar palabras clave en el nombre o key
+		for (const [keyword, icon] of Object.entries(iconMap)) {
+			if (key.includes(keyword) || name.includes(keyword)) {
+				return icon;
+			}
+		}
+		
+		// Icono por defecto según categoría
+		return template.category === 'mind' ? iconMap.default_mind : iconMap.default_body;
+	}
+	
+	onMount(async () => {
+		try {
+			// Cargar task templates desde el backend
+			const templates = await getTaskTemplates(authStore);
+			taskTemplates = templates;
+			
+			// Convertir templates a formato de actividades
+			activities = templates.map(template => ({
+				id: template.key,
+				icon: getIconForTemplate(template),
+				label: template.name,
+				color: colorMap[template.category] || 'blue',
+				desc: template.desc || template.name,
+				category: template.category,
+				duration: template.estimated_minutes,
+				difficulty: template.difficulty
+			}));
+			
+			console.log('✅ Task templates cargados:', activities.length);
+		} catch (error) {
+			console.error('Error cargando task templates:', error);
+			// Fallback a actividades estáticas si falla
+			activities = [
+				{ id: 'meditation', icon: '🧘', label: 'Meditación', color: 'purple', desc: 'Calma mental', category: 'mind' },
+				{ id: 'exercise', icon: '💪', label: 'Ejercicio', color: 'orange', desc: 'Fuerza física', category: 'body' },
+				{ id: 'reading', icon: '📚', label: 'Lectura', color: 'blue', desc: 'Conocimiento', category: 'mind' },
+				{ id: 'yoga', icon: '🧘‍♀️', label: 'Yoga', color: 'green', desc: 'Flexibilidad', category: 'body' },
+				{ id: 'running', icon: '🏃', label: 'Running', color: 'red', desc: 'Cardio', category: 'body' },
+				{ id: 'swimming', icon: '🏊', label: 'Natación', color: 'cyan', desc: 'Resistencia', category: 'body' },
+				{ id: 'cycling', icon: '🚴', label: 'Ciclismo', color: 'yellow', desc: 'Velocidad', category: 'body' },
+				{ id: 'walking', icon: '🚶', label: 'Caminar', color: 'teal', desc: 'Movilidad', category: 'body' },
+				{ id: 'stretching', icon: '🤸', label: 'Estiramiento', color: 'pink', desc: 'Flexibilidad', category: 'body' },
+				{ id: 'nutrition', icon: '🥗', label: 'Nutrición', color: 'lime', desc: 'Salud', category: 'body' }
+			];
+		} finally {
+			isLoading = false;
+		}
+	});
 	
 	function toggleActivity(id: string) {
 		if (selectedActivities.includes(id)) {
@@ -60,8 +140,15 @@
 		</div>
 	</div>
 	
-	<!-- Activities Grid -->
-	<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+	<!-- Loading State -->
+	{#if isLoading}
+		<div class="flex flex-col items-center justify-center py-12">
+			<div class="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+			<p class="text-white/60">Cargando actividades...</p>
+		</div>
+	{:else}
+		<!-- Activities Grid -->
+		<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
 		{#each activities as activity, i}
 			<button
 				type="button"
@@ -96,10 +183,10 @@
 				{/if}
 			</button>
 		{/each}
-	</div>
-	
-	<!-- Navigation -->
-	<div class="flex justify-between">
+		</div>
+		
+		<!-- Navigation -->
+		<div class="flex justify-between">
 		<button
 			type="button"
 			onclick={onBack}
@@ -121,7 +208,8 @@
 				<path d="M5 12h14M12 5l7 7-7 7"/>
 			</svg>
 		</button>
-	</div>
+		</div>
+	{/if}
 </div>
 
 <style>

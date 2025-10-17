@@ -13,21 +13,19 @@
 	import StepProfileInfo from './StepProfileInfo.svelte';
 	import StepActivities from './StepActivities.svelte';
 	import StepSchedules from './StepSchedules.svelte';
-	import StepAlarms from './StepAlarms.svelte';
-	import StepReminders from './StepReminders.svelte';
+	import StepNotificationPreferences from './StepNotificationPreferences.svelte';
 	import StepTemplates from './StepTemplates.svelte';
 	import StepCustomTasks from './StepCustomTasks.svelte';
 	
 	// Services
-	import { createRoutineAlarm } from '$lib/services/routine_alarms';
-	import { createRoutineReminder } from '$lib/services/routine_reminders';
+	import { saveNotificationPreferences } from '$lib/services/notification_preferences';
 	
 	const authStore = initializeAuthStore();
 	
 	// State
 	let currentStep = $state(1);
-	const totalSteps = 7;
-	const stepLabels = ['Perfil', 'Actividades', 'Horarios', 'Alarmas', 'Recordatorios', 'Templates', 'Personalizar'];
+	const totalSteps = 6;
+	const stepLabels = ['Perfil', 'Actividades', 'Horarios', 'Notificaciones', 'Templates', 'Personalizar'];
 	
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
@@ -59,14 +57,19 @@
 	let recommendedTemplates = $state<any[]>([]);
 	let selectedTemplateIds = $state<string[]>([]);
 	
-	// Step 4: Alarms
-	let alarms = $state<any[]>([]);
+	// Step 4: Notification Preferences
+	let notificationPreferences = $state({
+		task_overdue_reminders: 2,
+		task_overdue_alarms: 1,
+		reminder_frequency: 'medium' as 'low' | 'medium' | 'high',
+		alarm_intensity: 'normal' as 'gentle' | 'normal' | 'insistent',
+		quiet_hours_enabled: false,
+		quiet_hours_start: '22:00',
+		quiet_hours_end: '07:00'
+	});
 	
-	// Step 5: Reminders
-	let reminders = $state<any[]>([]);
-	
-	// Step 6: Templates (moved from step 4)
-	// Step 7: Custom Tasks (moved from step 5)
+	// Step 5: Templates
+	// Step 6: Custom Tasks
 	let customTasks = $state<any[]>([]);
 	
 	// Check authentication and load existing profile
@@ -136,12 +139,7 @@
 	}
 	
 	// Step 4 -> Step 5
-	function handleAlarmsNext() {
-		nextStep();
-	}
-	
-	// Step 5 -> Step 6
-	function handleRemindersNext() {
+	function handleNotificationPreferencesNext() {
 		// Generate recommended templates based on selected activities
 		recommendedTemplates = getRecommendedTemplates(selectedActivities);
 		// Don't pre-select any templates - let user choose
@@ -149,7 +147,7 @@
 		nextStep();
 	}
 	
-	// Step 6 -> Step 7
+	// Step 5 -> Step 6
 	function handleTemplatesNext() {
 		nextStep();
 	}
@@ -214,51 +212,16 @@
 				}
 			}
 			
-			// 3. Create alarms
-			console.log(`⏰ Creando ${alarms.length} alarmas...`);
-			for (const alarm of alarms) {
-				if (alarm.enabled) {
-					try {
-						await createRoutineAlarm(authStore, {
-							name: alarm.name,
-							alarm_time: alarm.time,
-							days_of_week: alarm.days,
-							notification_title: alarm.notification_title,
-							notification_body: alarm.notification_body,
-							source_type: alarm.source_type,
-							is_active: alarm.enabled
-						});
-						console.log('✅ Alarma creada:', alarm.name);
-					} catch (err) {
-						console.error('❌ Error creando alarma:', alarm.name, err);
-					}
-				}
+			// 3. Save notification preferences
+			console.log('🔔 Guardando preferencias de notificación...', notificationPreferences);
+			try {
+				await saveNotificationPreferences(authStore, notificationPreferences);
+				console.log('✅ Preferencias de notificación guardadas');
+			} catch (err) {
+				console.error('❌ Error guardando preferencias de notificación:', err);
 			}
 			
-			// 4. Create reminders
-			console.log(`🔔 Creando ${reminders.length} recordatorios...`);
-			for (const reminder of reminders) {
-				if (reminder.enabled) {
-					try {
-						await createRoutineReminder(authStore, {
-							name: reminder.name,
-							times_per_day: reminder.times_per_day,
-							start_time: reminder.start_time,
-							end_time: reminder.end_time,
-							days_of_week: reminder.days,
-							notification_title: reminder.notification_title,
-							notification_body: reminder.notification_body,
-							source_type: reminder.source_type,
-							is_active: reminder.enabled
-						});
-						console.log('✅ Recordatorio creado:', reminder.name);
-					} catch (err) {
-						console.error('❌ Error creando recordatorio:', reminder.name, err);
-					}
-				}
-			}
-			
-			// 5. Create selected templates
+			// 4. Create selected templates
 			const selectedTemplateData = recommendedTemplates.filter(t => 
 				selectedTemplateIds.includes(t.id)
 			);
@@ -276,7 +239,7 @@
 				});
 			}
 			
-			// 6. Create custom tasks
+			// 5. Create custom tasks
 			for (const task of customTasks) {
 				await createTaskTemplate(authStore, {
 					key: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -366,25 +329,19 @@
 					onBack={prevStep}
 				/>
 			{:else if currentStep === 4}
-				<StepAlarms
-					bind:alarms={alarms}
-					onNext={handleAlarmsNext}
+				<StepNotificationPreferences
+					bind:preferences={notificationPreferences}
+					onNext={handleNotificationPreferencesNext}
 					onBack={prevStep}
 				/>
 			{:else if currentStep === 5}
-				<StepReminders
-					bind:reminders={reminders}
-					onNext={handleRemindersNext}
-					onBack={prevStep}
-				/>
-			{:else if currentStep === 6}
 				<StepTemplates
 					{recommendedTemplates}
 					bind:selectedTemplateIds={selectedTemplateIds}
 					onNext={handleTemplatesNext}
 					onBack={prevStep}
 				/>
-			{:else if currentStep === 7}
+			{:else if currentStep === 6}
 				<StepCustomTasks
 					bind:customTasks={customTasks}
 					onComplete={handleComplete}

@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
+	import { fly, scale } from 'svelte/transition';
+	import { quintOut, backOut } from 'svelte/easing';
 	
 	interface Reminder {
 		id: string;
 		name: string;
+		description?: string;
 		times_per_day: number;
 		start_time: string;
 		end_time: string;
@@ -13,6 +14,12 @@
 		source_type: 'mind' | 'body' | 'goal' | 'custom';
 		notification_title: string;
 		notification_body: string;
+		notification_icon?: string;
+		notification_color?: string;
+		sound_enabled: boolean;
+		vibration_enabled: boolean;
+		priority: 'min' | 'low' | 'default' | 'high' | 'max';
+		task_id?: string;
 	}
 	
 	interface Props {
@@ -22,6 +29,84 @@
 	}
 	
 	let { reminders = $bindable(), onNext, onBack }: Props = $props();
+	
+	// Recomendaciones predefinidas
+	const recommendedReminders = [
+		{
+			emoji: '✅',
+			name: 'Tareas Pendientes',
+			description: 'Revisa y completa tus tareas',
+			times_per_day: 2,
+			start_time: '09:00',
+			end_time: '18:00',
+			days: [1, 2, 3, 4, 5],
+			source_type: 'goal' as const,
+			notification_title: '✅ Revisa tus tareas',
+			notification_body: '¿Qué tareas vas a completar ahora?',
+			notification_icon: 'task_icon',
+			notification_color: '#2196F3',
+			priority: 'high' as const,
+			sound_enabled: true,
+			vibration_enabled: true,
+			badge: 'Esencial'
+		},
+		{
+			emoji: '💧',
+			name: 'Hidratación',
+			description: 'Bebe agua regularmente',
+			times_per_day: 8,
+			start_time: '08:00',
+			end_time: '22:00',
+			days: [1, 2, 3, 4, 5, 6, 0],
+			source_type: 'body' as const,
+			notification_title: '💧 Hora de hidratarte',
+			notification_body: 'Bebe un vaso de agua',
+			notification_icon: 'water_icon',
+			notification_color: '#2196F3',
+			priority: 'default' as const,
+			sound_enabled: true,
+			vibration_enabled: false,
+			badge: 'Popular'
+		},
+		{
+			emoji: '🧘',
+			name: 'Pausas Activas',
+			description: 'Estira y relájate',
+			times_per_day: 4,
+			start_time: '09:00',
+			end_time: '18:00',
+			days: [1, 2, 3, 4, 5],
+			source_type: 'body' as const,
+			notification_title: '🧘 Pausa activa',
+			notification_body: 'Estira tu cuerpo por 5 minutos',
+			notification_icon: 'stretch_icon',
+			notification_color: '#9C27B0',
+			priority: 'default' as const,
+			sound_enabled: true,
+			vibration_enabled: true,
+			badge: 'Salud'
+		},
+		{
+			emoji: '🎯',
+			name: 'Objetivos Diarios',
+			description: 'Revisa tu progreso',
+			times_per_day: 3,
+			start_time: '08:00',
+			end_time: '20:00',
+			days: [1, 2, 3, 4, 5, 6, 0],
+			source_type: 'goal' as const,
+			notification_title: '🎯 Revisa tus objetivos',
+			notification_body: '¿Estás avanzando hacia tus metas?',
+			notification_icon: 'goal_icon',
+			notification_color: '#FF9800',
+			priority: 'high' as const,
+			sound_enabled: true,
+			vibration_enabled: true,
+			badge: 'Motivación'
+		}
+	];
+	
+	let showRecommendations = $state(true);
 	
 	const daysOfWeek = [
 		{ id: 0, label: 'D', name: 'Domingo' },
@@ -44,6 +129,7 @@
 		const newReminder: Reminder = {
 			id: `reminder-${Date.now()}`,
 			name: 'Nuevo Recordatorio',
+			description: '',
 			times_per_day: 3,
 			start_time: '08:00',
 			end_time: '22:00',
@@ -51,7 +137,34 @@
 			enabled: true,
 			source_type: 'custom',
 			notification_title: 'Recordatorio',
-			notification_body: '¡No olvides!'
+			notification_body: '¡No olvides!',
+			notification_icon: 'reminder_icon',
+			notification_color: '#2196F3',
+			sound_enabled: true,
+			vibration_enabled: true,
+			priority: 'default'
+		};
+		reminders = [...reminders, newReminder];
+	}
+	
+	function addRecommendedReminder(recommended: typeof recommendedReminders[0]) {
+		const newReminder: Reminder = {
+			id: `reminder-${Date.now()}`,
+			name: recommended.name,
+			description: recommended.description,
+			times_per_day: recommended.times_per_day,
+			start_time: recommended.start_time,
+			end_time: recommended.end_time,
+			days: recommended.days,
+			enabled: true,
+			source_type: recommended.source_type,
+			notification_title: recommended.notification_title,
+			notification_body: recommended.notification_body,
+			notification_icon: recommended.notification_icon,
+			notification_color: recommended.notification_color,
+			sound_enabled: recommended.sound_enabled,
+			vibration_enabled: recommended.vibration_enabled,
+			priority: recommended.priority
 		};
 		reminders = [...reminders, newReminder];
 	}
@@ -82,131 +195,225 @@
 </script>
 
 <div 
-	class="w-full max-w-5xl mx-auto"
+	class="w-full max-w-6xl mx-auto"
 	in:fly={{ x: 300, duration: 400, easing: quintOut }}
 	out:fly={{ x: -300, duration: 300, easing: quintOut }}
 >
-	<!-- Header -->
+	<!-- Header Gamificado -->
 	<div class="text-center mb-8">
-		<div class="inline-flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 rounded-full px-6 py-3 mb-4">
-			<span class="text-3xl">🔔</span>
-			<span class="text-blue-400 font-semibold">Recordatorios</span>
+		<div class="inline-block relative">
+			<div class="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full flex items-center justify-center text-lg animate-bounce">
+				🔔
+			</div>
+			<h2 class="text-4xl md:text-5xl font-black bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-500 bg-clip-text text-transparent mb-2">
+				Recordatorios Pro
+			</h2>
 		</div>
-		<p class="text-white/60 text-sm max-w-2xl mx-auto">
-			Configura recordatorios periódicos para mantener tus hábitos. Los recordatorios se repiten automáticamente durante el día.
+		<p class="text-white/70 text-base max-w-2xl mx-auto mb-4">
+			¡Crea hábitos increíbles con recordatorios inteligentes! Automatiza tu éxito 🎯
 		</p>
-		<div class="mt-4 inline-flex items-center gap-2 bg-blue-500/20 border border-blue-500/30 rounded-full px-4 py-2">
-			<span class="text-blue-400 font-bold text-lg">{reminders.length}</span>
-			<span class="text-white/60 text-sm">recordatorios configurados</span>
+		<div class="flex gap-3 justify-center flex-wrap">
+			<div class="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-2 border-blue-500/40 rounded-2xl px-5 py-2.5 backdrop-blur-sm">
+				<div class="flex items-center gap-2">
+					<span class="text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{reminders.length}</span>
+					<span class="text-white/80 font-semibold">Recordatorios activos</span>
+				</div>
+			</div>
 		</div>
 	</div>
 	
+	<!-- Recomendaciones -->
+	{#if showRecommendations && reminders.length === 0}
+		<div class="mb-8" transition:scale={{ duration: 300, easing: backOut }}>
+			<div class="flex items-center justify-between mb-4">
+				<h3 class="text-xl font-bold text-white flex items-center gap-2">
+					<span>✨</span>
+					<span>Recordatorios Recomendados</span>
+				</h3>
+				<button
+					onclick={() => showRecommendations = false}
+					class="text-white/40 hover:text-white/60 text-sm"
+				>
+					Ocultar
+				</button>
+			</div>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				{#each recommendedReminders as recommended, i}
+					<button
+						onclick={() => addRecommendedReminder(recommended)}
+						class="group relative bg-gradient-to-br from-neutral-900/90 to-neutral-800/90 border-2 border-white/10 rounded-3xl p-5 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105 transition-all text-left"
+						style="animation-delay: {i * 100}ms"
+					>
+						<!-- Badge -->
+						<div class="absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg">
+							{recommended.badge}
+						</div>
+						
+						<div class="flex items-start gap-4">
+							<div class="text-5xl group-hover:scale-110 transition-transform">
+								{recommended.emoji}
+							</div>
+							<div class="flex-1">
+								<h4 class="font-bold text-white text-lg mb-1">{recommended.name}</h4>
+								<p class="text-white/60 text-sm mb-3">{recommended.description}</p>
+								<div class="flex items-center gap-3 text-sm flex-wrap">
+									<span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-semibold">
+										{recommended.times_per_day}x al día
+									</span>
+									<span class="text-white/40">
+										{recommended.start_time} - {recommended.end_time}
+									</span>
+								</div>
+							</div>
+						</div>
+					</button>
+				{/each}
+			</div>
+		</div>
+	{/if}
+	
 	<!-- Reminders List -->
-	<div class="space-y-4 mb-8">
+	<div class="space-y-5 mb-8">
 		{#each reminders as reminder, i (reminder.id)}
 			<div 
-				class="bg-gradient-to-br from-neutral-900/80 to-neutral-800/80 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all"
-				style="animation-delay: {i * 50}ms"
+				class="relative bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 border-2 border-white/10 rounded-3xl p-6 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all group"
+				transition:scale={{ duration: 300, delay: i * 50, easing: backOut }}
 			>
-				<div class="flex flex-col md:flex-row gap-4">
-					<!-- Left: Icon & Toggle -->
+				<!-- Status Badge -->
+				<div class="absolute -top-3 left-6 px-4 py-1 rounded-full text-xs font-bold shadow-lg {reminder.enabled ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : 'bg-neutral-700 text-white/60'}">
+					{reminder.enabled ? '✓ Activo' : '○ Pausado'}
+				</div>
+				
+				<div class="flex flex-col gap-5 mt-2">
+					<!-- Header Row -->
 					<div class="flex items-center gap-4">
-						<div class="text-4xl">
-							{sourceTypeIcons[reminder.source_type]}
+						<div class="flex-shrink-0">
+							<div class="text-6xl group-hover:scale-110 transition-transform">
+								{sourceTypeIcons[reminder.source_type]}
+							</div>
 						</div>
-						<button
-							type="button"
-							onclick={() => toggleReminder(reminder)}
-							class="relative w-14 h-8 rounded-full transition-colors {reminder.enabled ? 'bg-green-500' : 'bg-neutral-700'}"
-						>
-							<div class="absolute top-1 {reminder.enabled ? 'right-1' : 'left-1'} w-6 h-6 bg-white rounded-full transition-all shadow-lg"></div>
-						</button>
+						
+						<div class="flex-1">
+							<input
+								type="text"
+								bind:value={reminder.name}
+								class="w-full bg-transparent border-0 border-b-2 border-white/10 focus:border-blue-500 px-0 py-2 text-xl font-bold text-white focus:outline-none placeholder-white/30"
+								placeholder="Nombre del recordatorio"
+							/>
+						</div>
+						
+						<div class="flex gap-2">
+							<!-- Toggle -->
+							<button
+								type="button"
+								onclick={() => toggleReminder(reminder)}
+								class="relative w-16 h-9 rounded-full transition-all shadow-lg {reminder.enabled ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-neutral-700'}"
+								aria-label="{reminder.enabled ? 'Desactivar' : 'Activar'} recordatorio"
+							>
+								<div class="absolute top-1 {reminder.enabled ? 'right-1' : 'left-1'} w-7 h-7 bg-white rounded-full transition-all shadow-md"></div>
+							</button>
+							
+							<!-- Delete -->
+							<button
+								type="button"
+								onclick={() => removeReminder(reminder.id)}
+								class="p-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-colors"
+								title="Eliminar recordatorio"
+								aria-label="Eliminar recordatorio"
+							>
+								<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+								</svg>
+							</button>
+						</div>
 					</div>
 					
-					<!-- Center: Info -->
-					<div class="flex-1 space-y-3">
+					<!-- Frequency and Time Range -->
+					<div class="flex flex-wrap gap-3 items-center">
+						<div class="flex items-center gap-2 bg-blue-500/20 border-2 border-blue-500/30 rounded-xl px-4 py-2.5">
+							<span class="text-white/60 text-sm font-semibold">🔄</span>
+							<input
+								type="number"
+								min="1"
+								max="24"
+								bind:value={reminder.times_per_day}
+								class="w-14 bg-transparent border-0 text-center text-white font-bold text-lg focus:outline-none"
+							/>
+							<span class="text-white/80 font-semibold text-sm">veces/día</span>
+						</div>
+						
+						<div class="flex items-center gap-2">
+							<span class="text-white/60 text-sm font-semibold">⏰</span>
+							<input
+								type="time"
+								bind:value={reminder.start_time}
+								class="bg-neutral-800/50 border-2 border-white/20 rounded-xl px-3 py-2 text-white font-semibold focus:border-blue-500 focus:outline-none"
+							/>
+							<span class="text-white/40">-</span>
+							<input
+								type="time"
+								bind:value={reminder.end_time}
+								class="bg-neutral-800/50 border-2 border-white/20 rounded-xl px-3 py-2 text-white font-semibold focus:border-blue-500 focus:outline-none"
+							/>
+						</div>
+					</div>
+					
+					<!-- Days -->
+					<div class="flex gap-1.5">
+						{#each daysOfWeek as day}
+							<button
+								type="button"
+								onclick={() => toggleDay(reminder, day.id)}
+								class="w-11 h-11 rounded-full border-2 transition-all text-sm font-bold shadow-md
+									{reminder.days.includes(day.id) 
+										? 'border-blue-500 bg-gradient-to-br from-blue-500 to-cyan-500 text-white scale-110' 
+										: 'border-white/20 text-white/40 hover:border-white/40 hover:scale-105'}"
+								title={day.name}
+								aria-label={`Seleccionar ${day.name}`}
+							>
+								{day.label}
+							</button>
+						{/each}
+					</div>
+					
+					<!-- Notifications -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 						<input
 							type="text"
-							bind:value={reminder.name}
-							class="w-full bg-neutral-800/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500/50 focus:outline-none"
-							placeholder="Nombre del recordatorio"
+							bind:value={reminder.notification_title}
+							class="bg-neutral-800/50 border-2 border-white/10 rounded-xl px-4 py-3 text-white font-semibold focus:border-blue-500/50 focus:outline-none placeholder-white/30"
+							placeholder="💬 Título de notificación"
 						/>
-						
-						<div class="flex flex-wrap gap-2 items-center">
-							<div class="flex items-center gap-2">
-								<label class="text-sm text-white/60">Veces al día:</label>
-								<input
-									type="number"
-									min="1"
-									max="24"
-									bind:value={reminder.times_per_day}
-									class="w-20 bg-neutral-800/50 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500/50 focus:outline-none"
-								/>
-							</div>
-							
-							<div class="flex items-center gap-2">
-								<label class="text-sm text-white/60">Desde:</label>
-								<input
-									type="time"
-									bind:value={reminder.start_time}
-									class="bg-neutral-800/50 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500/50 focus:outline-none"
-								/>
-							</div>
-							
-							<div class="flex items-center gap-2">
-								<label class="text-sm text-white/60">Hasta:</label>
-								<input
-									type="time"
-									bind:value={reminder.end_time}
-									class="bg-neutral-800/50 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500/50 focus:outline-none"
-								/>
-							</div>
-						</div>
-						
-						<div class="flex gap-1">
-							{#each daysOfWeek as day}
-								<button
-									type="button"
-									onclick={() => toggleDay(reminder, day.id)}
-									class="w-10 h-10 rounded-full border-2 transition-all text-sm font-semibold
-										{reminder.days.includes(day.id) 
-											? 'border-blue-500 bg-blue-500/20 text-blue-400' 
-											: 'border-white/10 text-white/40 hover:border-white/30'}"
-									title={day.name}
-								>
-									{day.label}
-								</button>
-							{/each}
-						</div>
-						
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-							<input
-								type="text"
-								bind:value={reminder.notification_title}
-								class="bg-neutral-800/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none"
-								placeholder="Título de notificación"
-							/>
-							<input
-								type="text"
-								bind:value={reminder.notification_body}
-								class="bg-neutral-800/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none"
-								placeholder="Mensaje de notificación"
-							/>
-						</div>
+						<input
+							type="text"
+							bind:value={reminder.notification_body}
+							class="bg-neutral-800/50 border-2 border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500/50 focus:outline-none placeholder-white/30"
+							placeholder="✉️ Mensaje"
+						/>
 					</div>
 					
-					<!-- Right: Delete -->
-					<div class="flex items-start">
-						<button
-							type="button"
-							onclick={() => removeReminder(reminder.id)}
-							class="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-							title="Eliminar recordatorio"
-						>
-							<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-							</svg>
-						</button>
+					<!-- Options Row -->
+					<div class="flex flex-wrap gap-3 pt-2 border-t border-white/10">
+						<label class="flex items-center gap-2 cursor-pointer group/opt">
+							<input type="checkbox" bind:checked={reminder.sound_enabled} class="w-5 h-5 rounded-lg accent-blue-500" />
+							<span class="text-sm text-white/70 group-hover/opt:text-white transition-colors">🔊 Sonido</span>
+						</label>
+						
+						<label class="flex items-center gap-2 cursor-pointer group/opt">
+							<input type="checkbox" bind:checked={reminder.vibration_enabled} class="w-5 h-5 rounded-lg accent-blue-500" />
+							<span class="text-sm text-white/70 group-hover/opt:text-white transition-colors">📳 Vibración</span>
+						</label>
+						
+						<div class="flex items-center gap-2">
+							<span class="text-sm text-white/60">Prioridad:</span>
+							<select bind:value={reminder.priority} class="bg-neutral-800 border border-white/20 rounded-lg px-3 py-1 text-sm text-white focus:border-blue-500 focus:outline-none">
+								<option value="min">Mín</option>
+								<option value="low">Baja</option>
+								<option value="default">Normal</option>
+								<option value="high">Alta</option>
+								<option value="max">Máx</option>
+							</select>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -216,37 +423,41 @@
 		<button
 			type="button"
 			onclick={addReminder}
-			class="w-full border-2 border-dashed border-white/20 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
+			class="w-full border-3 border-dashed border-blue-500/30 rounded-3xl p-8 hover:border-blue-500 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-cyan-500/10 transition-all group hover:scale-105"
 		>
-			<div class="flex items-center justify-center gap-3 text-white/60 group-hover:text-blue-400">
-				<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M12 5v14M5 12h14"/>
-				</svg>
-				<span class="font-semibold">Agregar Recordatorio</span>
+			<div class="flex items-center justify-center gap-4">
+				<div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+					<svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+						<path d="M12 5v14M5 12h14"/>
+					</svg>
+				</div>
+				<span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-cyan-300">
+					Crear Recordatorio Personalizado
+				</span>
 			</div>
 		</button>
 	</div>
 	
 	<!-- Navigation -->
-	<div class="flex justify-between">
+	<div class="flex justify-between gap-4">
 		<button
 			type="button"
 			onclick={onBack}
-			class="group flex items-center gap-2 px-6 py-3 bg-neutral-800/50 border border-white/10 rounded-xl hover:border-white/20 hover:scale-105 transition-all"
+			class="group flex items-center gap-3 px-8 py-4 bg-neutral-800/50 border-2 border-white/10 rounded-2xl hover:border-white/30 hover:scale-105 transition-all"
 		>
-			<svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<svg class="w-6 h-6 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<path d="M19 12H5M12 19l-7-7 7-7"/>
 			</svg>
-			<span>Atrás</span>
+			<span class="font-semibold text-lg">Atrás</span>
 		</button>
 		
 		<button
 			type="button"
 			onclick={onNext}
-			class="group flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl hover:from-blue-500 hover:to-cyan-500 hover:scale-105 transition-all shadow-lg shadow-blue-500/25"
+			class="group flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-2xl hover:from-blue-500 hover:via-cyan-500 hover:to-teal-500 hover:scale-105 transition-all shadow-xl shadow-blue-500/30"
 		>
-			<span class="font-semibold">Continuar</span>
-			<svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<span class="font-bold text-lg">Continuar</span>
+			<svg class="w-6 h-6 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 				<path d="M5 12h14M12 5l7 7-7 7"/>
 			</svg>
 		</button>

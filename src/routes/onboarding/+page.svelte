@@ -13,19 +13,21 @@
 	import StepProfileInfo from './StepProfileInfo.svelte';
 	import StepActivities from './StepActivities.svelte';
 	import StepSchedules from './StepSchedules.svelte';
-	import StepNotificationPreferences from './StepNotificationPreferences.svelte';
+	import StepAlarms from './StepAlarms.svelte';
+	import StepReminders from './StepReminders.svelte';
 	import StepTemplates from './StepTemplates.svelte';
 	import StepCustomTasks from './StepCustomTasks.svelte';
 	
 	// Services
-	import { saveNotificationPreferences } from '$lib/services/notification_preferences';
+	import { createRoutineAlarm } from '$lib/services/routine_alarms';
+	import { createRoutineReminder } from '$lib/services/routine_reminders';
 	
 	const authStore = initializeAuthStore();
 	
 	// State
 	let currentStep = $state(1);
-	const totalSteps = 6;
-	const stepLabels = ['Perfil', 'Actividades', 'Horarios', 'Notificaciones', 'Templates', 'Personalizar'];
+	const totalSteps = 7;
+	const stepLabels = ['Perfil', 'Actividades', 'Horarios', 'Alarmas', 'Recordatorios', 'Templates', 'Personalizar'];
 	
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
@@ -53,23 +55,17 @@
 	let selectedTimes = $state<string[]>([]);
 	let selectedDays = $state<string[]>([]);
 	
-	// Step 4: Templates
+	// Step 4: Alarmas
+	let alarms = $state<any[]>([]);
+	
+	// Step 5: Recordatorios
+	let reminders = $state<any[]>([]);
+	
+	// Step 6: Templates
 	let recommendedTemplates = $state<any[]>([]);
 	let selectedTemplateIds = $state<string[]>([]);
 	
-	// Step 4: Notification Preferences
-	let notificationPreferences = $state({
-		task_overdue_reminders: 2,
-		task_overdue_alarms: 1,
-		reminder_frequency: 'medium' as 'low' | 'medium' | 'high',
-		alarm_intensity: 'normal' as 'gentle' | 'normal' | 'insistent',
-		quiet_hours_enabled: false,
-		quiet_hours_start: '22:00',
-		quiet_hours_end: '07:00'
-	});
-	
-	// Step 5: Templates
-	// Step 6: Custom Tasks
+	// Step 7: Custom Tasks
 	let customTasks = $state<any[]>([]);
 	
 	// Check authentication and load existing profile
@@ -139,7 +135,12 @@
 	}
 	
 	// Step 4 -> Step 5
-	function handleNotificationPreferencesNext() {
+	function handleAlarmsNext() {
+		nextStep();
+	}
+	
+	// Step 5 -> Step 6
+	function handleRemindersNext() {
 		// Generate recommended templates based on selected activities
 		recommendedTemplates = getRecommendedTemplates(selectedActivities);
 		// Don't pre-select any templates - let user choose
@@ -147,7 +148,7 @@
 		nextStep();
 	}
 	
-	// Step 5 -> Step 6
+	// Step 6 -> Step 7
 	function handleTemplatesNext() {
 		nextStep();
 	}
@@ -212,16 +213,68 @@
 				}
 			}
 			
-			// 3. Save notification preferences
-			console.log('🔔 Guardando preferencias de notificación...', notificationPreferences);
-			try {
-				await saveNotificationPreferences(authStore, notificationPreferences);
-				console.log('✅ Preferencias de notificación guardadas');
-			} catch (err) {
-				console.error('❌ Error guardando preferencias de notificación:', err);
+			// 3. Create alarms
+			console.log(`⏰ Creando ${alarms.length} alarmas...`);
+			for (const alarm of alarms) {
+				try {
+					await createRoutineAlarm(authStore, {
+						name: alarm.name,
+						description: alarm.description,
+						alarm_time: alarm.time,
+						days_of_week: alarm.days,
+						notification_title: alarm.notification_title,
+						notification_body: alarm.notification_body,
+						notification_icon: alarm.notification_icon,
+						notification_color: alarm.notification_color,
+						sound_enabled: alarm.sound_enabled,
+						sound_uri: alarm.sound_uri,
+						vibration_enabled: alarm.vibration_enabled,
+						vibration_pattern: alarm.vibration_pattern,
+						snooze_enabled: alarm.snooze_enabled,
+						snooze_duration_min: alarm.snooze_duration_min,
+						max_snoozes: alarm.max_snoozes,
+						priority: alarm.priority,
+						can_dismiss: alarm.can_dismiss,
+						auto_dismiss_minutes: alarm.auto_dismiss_minutes,
+						source_type: alarm.source_type || 'custom',
+						task_id: alarm.task_id,
+						is_active: alarm.enabled
+					});
+					console.log('✅ Alarma creada:', alarm.name);
+				} catch (err) {
+					console.error('❌ Error creando alarma:', alarm.name, err);
+				}
 			}
 			
-			// 4. Create selected templates
+			// 4. Create reminders
+			console.log(`🔔 Creando ${reminders.length} recordatorios...`);
+			for (const reminder of reminders) {
+				try {
+					await createRoutineReminder(authStore, {
+						name: reminder.name,
+						description: reminder.description,
+						times_per_day: reminder.times_per_day,
+						start_time: reminder.start_time,
+						end_time: reminder.end_time,
+						days_of_week: reminder.days,
+						notification_title: reminder.notification_title,
+						notification_body: reminder.notification_body,
+						notification_icon: reminder.notification_icon,
+						notification_color: reminder.notification_color,
+						sound_enabled: reminder.sound_enabled,
+						vibration_enabled: reminder.vibration_enabled,
+						priority: reminder.priority,
+						source_type: reminder.source_type || 'custom',
+						task_id: reminder.task_id,
+						is_active: reminder.enabled
+					});
+					console.log('✅ Recordatorio creado:', reminder.name);
+				} catch (err) {
+					console.error('❌ Error creando recordatorio:', reminder.name, err);
+				}
+			}
+			
+			// 5. Create selected templates
 			const selectedTemplateData = recommendedTemplates.filter(t => 
 				selectedTemplateIds.includes(t.id)
 			);
@@ -239,7 +292,7 @@
 				});
 			}
 			
-			// 5. Create custom tasks
+			// 6. Create custom tasks
 			for (const task of customTasks) {
 				await createTaskTemplate(authStore, {
 					key: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -294,6 +347,7 @@
 				<button
 					onclick={() => error = null}
 					class="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+					aria-label="Cerrar mensaje de error"
 				>
 					<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M18 6L6 18M6 6l12 12"/>
@@ -301,7 +355,7 @@
 				</button>
 			</div>
 		{/if}
-		
+
 		<!-- Step Content -->
 		<div class="relative">
 			{#if isLoadingProfile}
@@ -329,19 +383,25 @@
 					onBack={prevStep}
 				/>
 			{:else if currentStep === 4}
-				<StepNotificationPreferences
-					bind:preferences={notificationPreferences}
-					onNext={handleNotificationPreferencesNext}
+				<StepAlarms
+					bind:alarms={alarms}
+					onNext={handleAlarmsNext}
 					onBack={prevStep}
 				/>
 			{:else if currentStep === 5}
+				<StepReminders
+					bind:reminders={reminders}
+					onNext={handleRemindersNext}
+					onBack={prevStep}
+				/>
+			{:else if currentStep === 6}
 				<StepTemplates
 					{recommendedTemplates}
 					bind:selectedTemplateIds={selectedTemplateIds}
 					onNext={handleTemplatesNext}
 					onBack={prevStep}
 				/>
-			{:else if currentStep === 6}
+			{:else if currentStep === 7}
 				<StepCustomTasks
 					bind:customTasks={customTasks}
 					onComplete={handleComplete}

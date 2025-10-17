@@ -35,6 +35,8 @@
 	let isLoadingProfile = $state(true);
 	let hasExistingProfile = $state(false);
 	let fabExpanded = $state(false);
+	let showFab = $state(false);
+	let scrollTimeout: number;
 	
 	// Step 1: Profile Data
 	let profileData = $state({
@@ -71,42 +73,70 @@
 	let customTasks = $state<any[]>([]);
 	
 	// Check authentication and load existing profile
-	onMount(async () => {
+	onMount(() => {
 		if (!authStore.isAuthenticated) {
 			goto('/login');
 			return;
 		}
 		
-		// Try to load existing profile
-		try {
-			const existingProfile = await getUserProfile();
-			
-			if (existingProfile && existingProfile.id) {
-				hasExistingProfile = true;
+		// Load profile async
+		(async () => {
+			try {
+				const existingProfile = await getUserProfile();
 				
-				// Pre-fill profile data with existing info
-				profileData = {
-					timezone: existingProfile.timezone || 'America/Mexico_City',
-					preferred_language: existingProfile.preferred_language || 'es',
-					gender: existingProfile.gender || '',
-					birth_date: existingProfile.birth_date || '',
-					weight_kg: existingProfile.weight_kg || null,
-					height_cm: existingProfile.height_cm || null,
-					work_schedules: existingProfile.work_schedules || '9:00-17:00',
-					day_work: (existingProfile as any).day_work || 'L,M,M,J,V',
-					hours_available_to_week: existingProfile.hours_available_to_week || 10,
-					current_status: existingProfile.current_status || 'active'
-				};
-				
-				console.log('✅ Perfil existente cargado:', existingProfile);
+				if (existingProfile && existingProfile.id) {
+					hasExistingProfile = true;
+					
+					// Pre-fill profile data with existing info
+					profileData = {
+						timezone: existingProfile.timezone || 'America/Mexico_City',
+						preferred_language: existingProfile.preferred_language || 'es',
+						gender: existingProfile.gender || '',
+						birth_date: existingProfile.birth_date || '',
+						weight_kg: existingProfile.weight_kg || null,
+						height_cm: existingProfile.height_cm || null,
+						work_schedules: existingProfile.work_schedules || '9:00-17:00',
+						day_work: (existingProfile as any).day_work || 'L,M,M,J,V',
+						hours_available_to_week: existingProfile.hours_available_to_week || 10,
+						current_status: existingProfile.current_status || 'active'
+					};
+					
+					console.log('✅ Perfil existente cargado:', existingProfile);
+				}
+			} catch (err) {
+				// No profile exists yet, that's fine
+				console.log('ℹ️ No hay perfil existente, creando uno nuevo');
+				hasExistingProfile = false;
+			} finally {
+				isLoadingProfile = false;
 			}
-		} catch (err) {
-			// No profile exists yet, that's fine
-			console.log('ℹ️ No hay perfil existente, creando uno nuevo');
-			hasExistingProfile = false;
-		} finally {
-			isLoadingProfile = false;
-		}
+		})();
+		
+		// Handle scroll to show/hide FAB
+		const handleScroll = () => {
+			showFab = true;
+			
+			// Clear existing timeout
+			if (scrollTimeout) {
+				clearTimeout(scrollTimeout);
+			}
+			
+			// Hide after 2 seconds of no scrolling
+			scrollTimeout = setTimeout(() => {
+				if (!fabExpanded) {
+					showFab = false;
+				}
+			}, 2000) as unknown as number;
+		};
+		
+		window.addEventListener('scroll', handleScroll);
+		
+		return () => {
+			window.removeEventListener('scroll', handleScroll);
+			if (scrollTimeout) {
+				clearTimeout(scrollTimeout);
+			}
+		};
 	});
 	
 	// Navigate functions
@@ -328,20 +358,20 @@
 		<ProgressBar {currentStep} {totalSteps} {stepLabels} onStepClick={goToStep} />
 		
 		<!-- Floating Action Button (FAB) - Mobile -->
-		<div class="fixed right-4 top-1/2 -translate-y-1/2 z-50 md:hidden">
+		<div class="fixed right-0 top-1/2 -translate-y-1/2 z-50 md:hidden">
 			{#if fabExpanded}
 				<!-- Expanded State -->
-				<div class="flex flex-col gap-3 items-end" transition:scale={{ duration: 200 }}>
+				<div class="flex flex-col gap-2 items-end pr-3" transition:scale={{ duration: 200, start: 0.5 }}>
 					{#if currentStep > 1}
 						<button
 							type="button"
 							onclick={() => { prevStep(); fabExpanded = false; }}
-							class="flex items-center gap-2 px-4 py-3 bg-neutral-800/95 border-2 border-white/20 rounded-full hover:scale-105 transition-all backdrop-blur-md shadow-xl"
+							class="flex items-center gap-2 px-3 py-2 bg-neutral-800/95 border-2 border-white/20 rounded-l-full rounded-r-full hover:scale-105 transition-all backdrop-blur-md shadow-lg text-xs"
 						>
-							<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<path d="M19 12H5M12 19l-7-7 7-7"/>
 							</svg>
-							<span class="font-semibold text-sm">Atrás</span>
+							<span class="font-semibold">Atrás</span>
 						</button>
 					{/if}
 					
@@ -349,10 +379,10 @@
 						<button
 							type="button"
 							onclick={() => { nextStep(); fabExpanded = false; }}
-							class="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full hover:scale-105 transition-all shadow-xl shadow-green-500/40 backdrop-blur-md"
+							class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-l-full rounded-r-full hover:scale-105 transition-all shadow-lg shadow-green-500/40 backdrop-blur-md text-xs"
 						>
-							<span class="font-bold text-sm">Continuar</span>
-							<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<span class="font-bold">Continuar</span>
+							<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<path d="M5 12h14M12 5l7 7-7 7"/>
 							</svg>
 						</button>
@@ -361,9 +391,9 @@
 							type="button"
 							onclick={() => { handleComplete(); fabExpanded = false; }}
 							disabled={isSubmitting}
-							class="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full hover:scale-105 transition-all shadow-xl shadow-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-md"
+							class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-l-full rounded-r-full hover:scale-105 transition-all shadow-lg shadow-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-md text-xs"
 						>
-							<span class="font-bold text-sm">
+							<span class="font-bold">
 								{isSubmitting ? 'Guardando...' : '✨ Finalizar'}
 							</span>
 						</button>
@@ -373,25 +403,49 @@
 					<button
 						type="button"
 						onclick={() => fabExpanded = false}
-						class="w-14 h-14 bg-red-500/90 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-xl shadow-red-500/40 backdrop-blur-md"
+						class="w-10 h-10 bg-red-500/90 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-lg shadow-red-500/40 backdrop-blur-md"
 						aria-label="Cerrar menú"
 					>
-						<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 							<path d="M18 6L6 18M6 6l12 12"/>
 						</svg>
 					</button>
 				</div>
 			{:else}
-				<!-- Collapsed State -->
+				<!-- Collapsed State - Tiny Edge Tab (Achatado) -->
 				<button
 					type="button"
-					onclick={() => fabExpanded = true}
-					class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-2xl shadow-green-500/50 backdrop-blur-md animate-pulse"
+					onclick={() => { fabExpanded = true; showFab = true; }}
+					class="relative bg-gradient-to-br from-green-500 to-emerald-600 hover:shadow-green-500/60 transition-all shadow-md shadow-green-500/30 backdrop-blur-md flex items-center justify-center group overflow-hidden hover:opacity-100"
+					class:w-2={!showFab}
+					class:h-16={!showFab}
+					class:w-10={showFab}
+					class:h-24={showFab}
+					class:rounded-l-2xl={!showFab}
+					class:rounded-l-full={showFab}
+					class:opacity-70={showFab}
+					class:opacity-40={!showFab}
 					aria-label="Abrir menú de navegación"
+					style="border-top-right-radius: 0; border-bottom-right-radius: 0;"
 				>
-					<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<path d="M5 12h14M12 5l7 7-7 7"/>
-					</svg>
+					<!-- Pulse effect on scroll -->
+					{#if showFab}
+						<div class="absolute inset-0 bg-green-400/20 rounded-l-full animate-pulse" style="border-top-right-radius: 0; border-bottom-right-radius: 0;"></div>
+					{/if}
+					
+					<!-- Icon - Only show when scrolling -->
+					{#if showFab}
+						<div class="relative z-10 flex flex-col items-center gap-1">
+							<svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+								<path d="M9 5l7 7-7 7"/>
+							</svg>
+							<div class="flex flex-col gap-1">
+								<div class="w-1 h-1 bg-white rounded-full"></div>
+								<div class="w-1 h-1 bg-white rounded-full"></div>
+								<div class="w-1 h-1 bg-white rounded-full"></div>
+							</div>
+						</div>
+					{/if}
 				</button>
 			{/if}
 		</div>

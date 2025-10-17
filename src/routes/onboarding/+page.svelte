@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { scale } from 'svelte/transition';
 	import { initializeAuthStore } from '$lib/stores/auth.svelte';
 	import { getUserProfile, saveOrUpdateUserProfile } from '$lib/services/profile';
 	import { createBotRule } from '$lib/services/bot_rules';
@@ -18,6 +17,7 @@
 	import StepReminders from './StepReminders.svelte';
 	import StepTemplates from './StepTemplates.svelte';
 	import StepCustomTasks from './StepCustomTasks.svelte';
+	import FloatingActionButton from '$lib/components/FloatingActionButton.svelte';
 	
 	// Services
 	import { createRoutineAlarm } from '$lib/services/routine_alarms';
@@ -34,9 +34,6 @@
 	let error = $state<string | null>(null);
 	let isLoadingProfile = $state(true);
 	let hasExistingProfile = $state(false);
-	let fabExpanded = $state(false);
-	let showFab = $state(false);
-	let scrollTimeout: number;
 	
 	// Step 1: Profile Data
 	let profileData = $state({
@@ -111,32 +108,6 @@
 				isLoadingProfile = false;
 			}
 		})();
-		
-		// Handle scroll to show/hide FAB
-		const handleScroll = () => {
-			showFab = true;
-			
-			// Clear existing timeout
-			if (scrollTimeout) {
-				clearTimeout(scrollTimeout);
-			}
-			
-			// Hide after 2 seconds of no scrolling
-			scrollTimeout = setTimeout(() => {
-				if (!fabExpanded) {
-					showFab = false;
-				}
-			}, 2000) as unknown as number;
-		};
-		
-		window.addEventListener('scroll', handleScroll);
-		
-		return () => {
-			window.removeEventListener('scroll', handleScroll);
-			if (scrollTimeout) {
-				clearTimeout(scrollTimeout);
-			}
-		};
 	});
 	
 	// Navigate functions
@@ -358,97 +329,44 @@
 		<ProgressBar {currentStep} {totalSteps} {stepLabels} onStepClick={goToStep} />
 		
 		<!-- Floating Action Button (FAB) - Mobile -->
-		<div class="fixed right-0 top-1/2 -translate-y-1/2 z-50 md:hidden">
-			{#if fabExpanded}
-				<!-- Expanded State -->
-				<div class="flex flex-col gap-2 items-end pr-3">
-					{#if currentStep > 1}
-						<button
-							type="button"
-							onclick={() => { prevStep(); fabExpanded = false; }}
-							class="flex items-center gap-2 px-3 py-2 bg-neutral-800/95 border-2 border-white/20 rounded-l-full rounded-r-full hover:scale-105 transition-all backdrop-blur-md shadow-lg text-xs"
-						>
-							<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<path d="M19 12H5M12 19l-7-7 7-7"/>
-							</svg>
-							<span class="font-semibold">Atrás</span>
-						</button>
-					{/if}
-					
-					{#if currentStep < totalSteps}
-						<button
-							type="button"
-							onclick={() => { nextStep(); fabExpanded = false; }}
-							class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-l-full rounded-r-full hover:scale-105 transition-all shadow-lg shadow-green-500/40 backdrop-blur-md text-xs"
-						>
-							<span class="font-bold">Continuar</span>
-							<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<path d="M5 12h14M12 5l7 7-7 7"/>
-							</svg>
-						</button>
-					{:else}
-						<button
-							type="button"
-							onclick={() => { handleComplete(); fabExpanded = false; }}
-							disabled={isSubmitting}
-							class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-l-full rounded-r-full hover:scale-105 transition-all shadow-lg shadow-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-md text-xs"
-						>
-							<span class="font-bold">
-								{isSubmitting ? 'Guardando...' : '✨ Finalizar'}
-							</span>
-						</button>
-					{/if}
-					
-					<!-- Close button -->
-					<button
-						type="button"
-						onclick={() => fabExpanded = false}
-						class="w-10 h-10 bg-red-500/90 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-lg shadow-red-500/40 backdrop-blur-md"
-						aria-label="Cerrar menú"
-					>
-						<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<path d="M18 6L6 18M6 6l12 12"/>
-						</svg>
-					</button>
-				</div>
-			{:else}
-				<!-- Collapsed State - Tiny Edge Tab (Achatado) -->
+		<FloatingActionButton>
+			{#if currentStep > 1}
 				<button
 					type="button"
-					onclick={() => { fabExpanded = true; showFab = true; }}
-					class="relative bg-gradient-to-br from-green-500 to-emerald-600 hover:shadow-green-500/60 shadow-md shadow-green-500/30 backdrop-blur-md flex items-center justify-center group overflow-hidden hover:opacity-100"
-					style="
-						border-top-right-radius: 0; 
-						border-bottom-right-radius: 0;
-						width: {showFab ? '2.5rem' : '0.5rem'};
-						height: {showFab ? '6rem' : '4rem'};
-						opacity: {showFab ? '0.7' : '0.4'};
-						border-radius: {showFab ? '9999px 0 0 9999px' : '1rem 0 0 1rem'};
-						transition: all 300ms ease-out;
-					"
-					aria-label="Abrir menú de navegación"
+					onclick={prevStep}
+					class="flex items-center gap-2 px-3 py-2 bg-neutral-800/95 border-2 border-white/20 rounded-l-full rounded-r-full hover:scale-105 transition-all backdrop-blur-md shadow-lg text-xs"
 				>
-					<!-- Pulse effect on scroll -->
-					{#if showFab}
-						<div class="absolute inset-0 bg-green-400/20 animate-pulse" style="border-radius: 9999px 0 0 9999px;"></div>
-					{/if}
-					
-					<!-- Icon - Only show when scrolling -->
-					{#if showFab}
-						<div class="relative z-10 flex flex-col items-center gap-1">
-							<svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-								<path d="M9 5l7 7-7 7"/>
-							</svg>
-							<div class="flex flex-col gap-1">
-								<div class="w-1 h-1 bg-white rounded-full"></div>
-								<div class="w-1 h-1 bg-white rounded-full"></div>
-								<div class="w-1 h-1 bg-white rounded-full"></div>
-							</div>
-						</div>
-					{/if}
+					<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<path d="M19 12H5M12 19l-7-7 7-7"/>
+					</svg>
+					<span class="font-semibold">Atrás</span>
 				</button>
 			{/if}
-		</div>
+			
+			{#if currentStep < totalSteps}
+				<button
+					type="button"
+					onclick={nextStep}
+					class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-l-full rounded-r-full hover:scale-105 transition-all shadow-lg shadow-green-500/40 backdrop-blur-md text-xs"
+				>
+					<span class="font-bold">Continuar</span>
+					<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<path d="M5 12h14M12 5l7 7-7 7"/>
+					</svg>
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={handleComplete}
+					disabled={isSubmitting}
+					class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-l-full rounded-r-full hover:scale-105 transition-all shadow-lg shadow-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-md text-xs"
+				>
+					<span class="font-bold">
+						{isSubmitting ? 'Guardando...' : '✨ Finalizar'}
+					</span>
+				</button>
+			{/if}
+		</FloatingActionButton>
 		
 		<!-- Existing Profile Notice -->
 		{#if hasExistingProfile && !isLoadingProfile}

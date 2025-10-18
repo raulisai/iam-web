@@ -12,7 +12,10 @@
     let { task, isCompleted = false, oncomplete, onedit, ondelete }: Props = $props();
 
     const taskType = $derived((task.type || 'habit') as 'mind' | 'body' | 'habit' | 'one_off');
-    const taskWeight = $derived(task.weight || 1);
+    const taskWeight = $derived((() => {
+        const weight = task.weight ?? 1;
+        return (typeof weight === 'number' && weight > 0 && isFinite(weight)) ? weight : 1;
+    })());
 
     const typeColors = {
         mind: 'from-purple-500/20 to-purple-600/20 border-purple-500/30',
@@ -102,16 +105,16 @@
                 {/if}
 
                 <!-- Weight indicator -->
-                {#if taskWeight !== 1}
+                {#if taskWeight > 1}
                     <div class="mt-2 flex items-center gap-1">
                         <span class="text-xs text-white/50">Peso:</span>
                         <div class="flex gap-0.5">
-                            {#each Array(Math.min(taskWeight, 5)) as _}
+                            {#each Array(Math.min(Math.max(Math.floor(taskWeight), 1), 5)) as _}
                                 <div class="w-1.5 h-3 bg-amber-400 rounded-sm"></div>
                             {/each}
                         </div>
                         {#if taskWeight > 5}
-                            <span class="text-xs text-amber-400 font-bold">×{taskWeight}</span>
+                            <span class="text-xs text-amber-400 font-bold">×{Math.floor(taskWeight)}</span>
                         {/if}
                     </div>
                 {/if}

@@ -97,8 +97,8 @@ export async function createTaskFromRecommendation(
 ): Promise<boolean> {
     try {
         const endpoint = recommendation.category === 'mind' 
-            ? '/api/tasks/mind' 
-            : '/api/tasks/body';
+            ? '/api/tasks/mind/' 
+            : '/api/tasks/body/';
 
         const payload = {
             template_id: recommendation.id,
@@ -110,14 +110,12 @@ export async function createTaskFromRecommendation(
 
         const response = await authStore.authenticatedFetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-            console.error('Error creating task from recommendation:', response.statusText);
+            const errorText = await response.text();
+            console.error('Error creating task from recommendation:', response.status, errorText);
             return false;
         }
 
@@ -143,8 +141,8 @@ export async function createCustomTask(
 ): Promise<boolean> {
     try {
         const endpoint = category === 'mind' 
-            ? '/api/tasks/mind' 
-            : '/api/tasks/body';
+            ? '/api/tasks/mind/' 
+            : '/api/tasks/body/';
 
         const payload = {
             title: taskData.name,
@@ -159,14 +157,12 @@ export async function createCustomTask(
 
         const response = await authStore.authenticatedFetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-            console.error('Error creating custom task:', response.statusText);
+            const errorText = await response.text();
+            console.error('Error creating custom task:', response.status, errorText);
             return false;
         }
 

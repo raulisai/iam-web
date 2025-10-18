@@ -135,7 +135,20 @@ class AuthStore {
 		const headers = new Headers(options.headers);
 		headers.set('Authorization', `Bearer ${token}`);
 		
-		// Solo agregar Content-Type si no está ya definido
+		// Agregar headers estándar requeridos por el backend
+		if (!headers.has('accept')) {
+			headers.set('accept', '*/*');
+		}
+		if (!headers.has('accept-language')) {
+			headers.set('accept-language', 'es-419,es;q=0.5');
+		}
+		
+		// Agregar origin si estamos en el navegador
+		if (typeof window !== 'undefined' && !headers.has('origin')) {
+			headers.set('origin', window.location.origin);
+		}
+		
+		// Solo agregar Content-Type si no está ya definido y hay body
 		if (!headers.has('Content-Type') && options.body) {
 			headers.set('Content-Type', 'application/json');
 		}
@@ -143,6 +156,7 @@ class AuthStore {
 		return fetch(fullUrl, {
 			...options,
 			headers,
+			credentials: 'omit', // No enviar cookies
 		});
 	}
 

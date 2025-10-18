@@ -118,6 +118,35 @@ export async function getTaskTemplatesByCategory(authStore: any, category: 'mind
 }
 
 /**
+ * Get task templates by creator
+ */
+export async function getTaskTemplatesByCreator(authStore: any, creatorId: string): Promise<TaskTemplate[]> {
+	try {
+		const token = authStore.getToken();
+		if (!token) {
+			console.error('No authentication token');
+			return [];
+		}
+
+		const response = await apiCall(`/api/task-templates/creator/${creatorId}`, {
+			method: 'GET',
+			headers: {
+				'Authorization': `Bearer ${token}`
+			}
+		});
+
+		if (!response.ok) {
+			throw new Error(`Error ${response.status}: ${response.statusText}`);
+		}
+
+		return await response.json();
+	} catch (error) {
+		console.error('Error fetching task templates by creator:', error);
+		return [];
+	}
+}
+
+/**
  * Create new task template
  */
 export async function createTaskTemplate(authStore: any, templateData: CreateTaskTemplateData): Promise<TaskTemplate | null> {

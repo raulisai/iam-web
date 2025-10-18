@@ -210,6 +210,13 @@ class AuthStore {
 		if (typeof window === 'undefined') return null;
 		return localStorage.getItem('token');
 	}
+
+	getUserId(): string {
+		if (!this.user || !this.user.id) {
+			throw new Error('No hay usuario autenticado');
+		}
+		return this.user.id;
+	}
 }
 
 // Crear una instancia singleton del store

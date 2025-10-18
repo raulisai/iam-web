@@ -3,14 +3,14 @@
     import TaskCarousel from '../../lib/components/TaskCarousel.svelte';
     import MetricsChart from '../../lib/components/MetricsChart.svelte';
     import AddTaskButton from '../../lib/components/AddTaskButton.svelte';
-    import TaskRecommendationModal from '../../lib/components/TaskRecommendationModal.svelte';
+    import TaskTemplateSelectionModal from '../../lib/components/TaskTemplateSelectionModal.svelte';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { getAuthContext } from '$lib/stores/auth.svelte';
     import { getMindTasks, completeTask } from '$lib/services/tasks';
     import { getLatestSnapshot } from '$lib/services/stats';
-    import { getMindRecommendations, createTaskFromRecommendation, createCustomTask } from '$lib/services/recommendations';
-    import type { Task, PerformanceSnapshot, TaskRecommendation } from '$lib/types';
+    import { createTaskFromRecommendation, createTaskFromTemplate } from '$lib/services/recommendations';
+    import type { Task, PerformanceSnapshot, TaskRecommendation, TaskTemplate } from '$lib/types';
     import { toastStore } from '$lib/stores/toast.svelte';
 
     let fillLevel = $state(0);
@@ -21,10 +21,8 @@
     let isLoadingStats = $state(true);
     let isLoadingTasks = $state(true);
     
-    // Recommendations state
-    let showRecommendationsModal = $state(false);
-    let recommendations = $state<TaskRecommendation[]>([]);
-    let isLoadingRecommendations = $state(false);
+    // Template selection state
+    let showTemplateModal = $state(false);
 
     // Obtener authStore una vez al inicializar el componente
     const authStore = getAuthContext();
@@ -98,67 +96,42 @@
     }
     
     async function handleAddTaskClick() {
-        showRecommendationsModal = true;
-        isLoadingRecommendations = true;
+        showTemplateModal = true;
+    }
+    
+    async function handleTemplateSelect(e: CustomEvent<TaskTemplate>) {
+        const template = e.detail;
+        console.log('Selected template:', template);
         
-        try {
-            // Usar IA para recomendaciones más inteligentes
-            const response = await getMindRecommendations(authStore, 3, true);
-            if (response && response.recommendations) {
-                recommendations = response.recommendations;
-                console.log(`Using ${response.method} recommendations`);
-            } else {
-                recommendations = [];
-                toastStore.error('No recommendations available');
-            }
-        } catch (error) {
-            console.error('Error loading recommendations:', error);
-            toastStore.error('Error loading recommendations');
-            recommendations = [];
-        } finally {
-            isLoadingRecommendations = false;
+        const success = await createTaskFromTemplate(authStore, template);
+        
+        if (success) {
+            toastStore.success('Task created from template!', template.reward_xp);
+            showTemplateModal = false;
+            await loadMindTasks();
+        } else {
+            toastStore.error('Error creating task');
         }
     }
     
     async function handleRecommendationSelect(e: CustomEvent<TaskRecommendation>) {
         const recommendation = e.detail;
-        console.log('Selected recommendation:', recommendation);
+        console.log('Selected AI recommendation:', recommendation);
         
         const success = await createTaskFromRecommendation(authStore, recommendation);
         
         if (success) {
-            toastStore.success('Task added successfully!', recommendation.reward_xp);
-            showRecommendationsModal = false;
-            // Recargar las tareas
+            toastStore.success('Task created with AI!', recommendation.reward_xp);
+            showTemplateModal = false;
             await loadMindTasks();
         } else {
-            toastStore.error('Error adding task');
+            toastStore.error('Error creating task');
         }
     }
     
-    async function handleCustomTaskCreate(e: CustomEvent<{
-        name: string;
-        desc: string;
-        reward_xp: number;
-        estimated_minutes: number;
-    }>) {
-        const taskData = e.detail;
-        console.log('Creating custom task:', taskData);
-        
-        const success = await createCustomTask(authStore, 'mind', taskData);
-        
-        if (success) {
-            toastStore.success('Custom task created!', taskData.reward_xp);
-            showRecommendationsModal = false;
-            // Recargar las tareas
-            await loadMindTasks();
-        } else {
-            toastStore.error('Error creating custom task');
-        }
-    }
     
     function handleModalClose() {
-        showRecommendationsModal = false;
+        showTemplateModal = false;
     }
 </script>
 
@@ -329,13 +302,11 @@
         <AddTaskButton position="bottom-right" color="purple" on:click={handleAddTaskClick} />
 </div>
 
-<!-- Task Recommendation Modal -->
-<TaskRecommendationModal 
-    bind:isOpen={showRecommendationsModal}
-    {recommendations}
+<!-- Task Template Selection Modal -->
+<TaskTemplateSelectionModal 
+    bind:isOpen={showTemplateModal}
     category="mind"
-    isLoading={isLoadingRecommendations}
-    on:select={handleRecommendationSelect}
-    on:createCustom={handleCustomTaskCreate}
+    on:select={handleTemplateSelect}
+    on:selectRecommendation={handleRecommendationSelect}
     on:close={handleModalClose}
 />

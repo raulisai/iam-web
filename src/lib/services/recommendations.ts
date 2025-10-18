@@ -172,3 +172,50 @@ export async function createCustomTask(
         return false;
     }
 }
+
+/**
+ * Crea una tarea desde un template
+ */
+export async function createTaskFromTemplate(
+    authStore: AuthStore,
+    template: {
+        id?: string;
+        name: string;
+        desc: string;
+        category: 'mind' | 'body';
+        reward_xp: number;
+        estimated_minutes: number;
+        default_params?: Record<string, any>;
+    },
+    scheduledAt?: string
+): Promise<boolean> {
+    try {
+        const endpoint = template.category === 'mind' 
+            ? '/api/tasks/mind/' 
+            : '/api/tasks/body/';
+
+        const payload = {
+            template_id: template.id,
+            scheduled_at: scheduledAt || new Date().toISOString(),
+            created_by: 'user',
+            status: 'pending',
+            params: template.default_params || {}
+        };
+
+        const response = await authStore.authenticatedFetch(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error creating task from template:', response.status, errorText);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error creating task from template:', error);
+        return false;
+    }
+}

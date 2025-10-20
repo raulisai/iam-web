@@ -3,7 +3,9 @@ import type {
 	GoalTask,
 	GoalTaskRecommendation,
 	GoalTaskRecommendationResponse,
-	TaskOccurrence
+	TaskOccurrence,
+	TaskLog,
+	TaskLogAction
 } from '../types';
 
 /**
@@ -530,6 +532,206 @@ export async function deleteGoalTask(token: string, goalId: string, taskId: stri
 			throw err;
 		}
 		console.error('Error deleting goal task after retries:', err);
+		throw err;
+	}
+}
+
+/**
+ * Get occurrence by ID
+ */
+export async function fetchOccurrenceById(token: string, occurrenceId: string): Promise<TaskOccurrence | null> {
+	try {
+		return await withRetry(async () => {
+			let authToken = token;
+			if (!authToken) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authToken = authStore.getToken() || '';
+			}
+			
+			const response = await fetch(`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${authToken}`,
+					Accept: 'application/json',
+					'Content-Type': 'application/json'
+				},
+				mode: 'cors',
+				cache: 'no-cache'
+			});
+
+			if (!response.ok) {
+				if (response.status === 401) {
+					const { getAuthStore } = await import('../stores/auth.svelte');
+					const authStore = getAuthStore();
+					authStore.handleUnauthorized();
+					throw new Error('UNAUTHORIZED');
+				}
+				return null;
+			}
+
+			return response.json();
+		});
+	} catch (err) {
+		console.error('Error fetching occurrence:', err);
+		return null;
+	}
+}
+
+/**
+ * Create a log entry for an occurrence
+ */
+export async function createOccurrenceLog(
+	token: string,
+	occurrenceId: string,
+	action: TaskLogAction,
+	metadata?: {
+		value?: number;
+		notes?: string;
+		duration_seconds?: number;
+		timer_start?: string;
+		timer_end?: string;
+	}
+): Promise<TaskLog> {
+	try {
+		return await withRetry(async () => {
+			let authToken = token;
+			if (!authToken) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authToken = authStore.getToken() || '';
+			}
+			
+			const response = await fetch(
+				`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/log`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${authToken}`,
+						'Content-Type': 'application/json',
+						Accept: 'application/json'
+					},
+					body: JSON.stringify({
+						action,
+						metadata: metadata || {}
+					}),
+					mode: 'cors',
+					cache: 'no-cache'
+				}
+			);
+
+			if (!response.ok) {
+				if (response.status === 401) {
+					const { getAuthStore } = await import('../stores/auth.svelte');
+					const authStore = getAuthStore();
+					authStore.handleUnauthorized();
+					throw new Error('UNAUTHORIZED');
+				}
+				
+				const contentType = response.headers.get('content-type');
+				if (contentType && contentType.includes('application/json')) {
+					const error = await response.json();
+					throw new Error(error.error || `Failed to create log: ${response.statusText}`);
+				} else {
+					throw new Error(`Failed to create log: ${response.status} ${response.statusText}`);
+				}
+			}
+
+			return response.json();
+		});
+	} catch (err) {
+		console.error('Error creating occurrence log:', err);
+		throw err;
+	}
+}
+
+/**
+ * Get all logs for an occurrence
+ */
+export async function fetchOccurrenceLogs(token: string, occurrenceId: string): Promise<TaskLog[]> {
+	try {
+		return await withRetry(async () => {
+			let authToken = token;
+			if (!authToken) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authToken = authStore.getToken() || '';
+			}
+			
+			const response = await fetch(`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/logs`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${authToken}`,
+					Accept: 'application/json',
+					'Content-Type': 'application/json'
+				},
+				mode: 'cors',
+				cache: 'no-cache'
+			});
+
+			if (!response.ok) {
+				if (response.status === 401) {
+					const { getAuthStore } = await import('../stores/auth.svelte');
+					const authStore = getAuthStore();
+					authStore.handleUnauthorized();
+					throw new Error('UNAUTHORIZED');
+				}
+				return [];
+			}
+
+			return response.json();
+		});
+	} catch (err) {
+		console.error('Error fetching occurrence logs:', err);
+		return [];
+	}
+}
+
+/**
+ * Delete an occurrence (uncomplete a task)
+ */
+export async function deleteOccurrence(token: string, occurrenceId: string): Promise<void> {
+	try {
+		await withRetry(async () => {
+			let authToken = token;
+			if (!authToken) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authToken = authStore.getToken() || '';
+			}
+			
+			const response = await fetch(`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}`, {
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${authToken}`,
+					Accept: 'application/json',
+					'Content-Type': 'application/json'
+				},
+				mode: 'cors',
+				cache: 'no-cache'
+			});
+
+			if (!response.ok) {
+				if (response.status === 401) {
+					const { getAuthStore } = await import('../stores/auth.svelte');
+					const authStore = getAuthStore();
+					authStore.handleUnauthorized();
+					throw new Error('UNAUTHORIZED');
+				}
+				
+				const contentType = response.headers.get('content-type');
+				if (contentType && contentType.includes('application/json')) {
+					const error = await response.json();
+					throw new Error(error.error || `Failed to delete occurrence: ${response.statusText}`);
+				} else {
+					throw new Error(`Failed to delete occurrence: ${response.status} ${response.statusText}`);
+				}
+			}
+			
+			return true;
+		});
+	} catch (err) {
+		console.error('Error deleting occurrence:', err);
 		throw err;
 	}
 }

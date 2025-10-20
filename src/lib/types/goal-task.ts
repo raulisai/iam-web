@@ -44,4 +44,31 @@ export interface TaskOccurrence {
 	completed_at: string;
 	notes?: string;
 	value?: number;
+	scheduled_at?: string;
+}
+
+export type TaskLogAction = 'started' | 'paused' | 'resumed' | 'completed' | 'skipped' | 'uncompleted' | 'comment';
+
+export interface TaskLog {
+	id?: string;
+	task_table: string;
+	task_id: string;
+	user_id?: string;
+	action: TaskLogAction;
+	timestamp: string;
+	metadata?: {
+		value?: number;
+		notes?: string;
+		duration_seconds?: number;
+		timer_start?: string;
+		timer_end?: string;
+	};
+}
+
+export interface TaskTimer {
+	taskId: string;
+	startTime: number;
+	elapsedSeconds: number;
+	isRunning: boolean;
+	isPaused: boolean;
 }

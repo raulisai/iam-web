@@ -8,12 +8,12 @@
     import { 
         fetchTaskRecommendations
     } from '../../../lib/services/goalTasks';
-    import type { GoalTaskRecommendation, GoalTask } from '../../../lib/types';
+    import type { GoalTaskRecommendation, GoalTask, TaskLog, TaskTimer } from '../../../lib/types';
     
     // Components
     import GoalHeader from '../../../lib/components/goals/GoalHeader.svelte';
     import ProgressBar from '../../../lib/components/goals/ProgressBar.svelte';
-    import TaskCard from '../../../lib/components/goals/TaskCard.svelte';
+    import TaskCardEnhanced from '../../../lib/components/goals/TaskCardEnhanced.svelte';
     import RecommendationCard from '../../../lib/components/goals/RecommendationCard.svelte';
     import TaskFormModal from '../../../lib/components/goals/TaskFormModal.svelte';
     import TaskDeleteModal from '../../../lib/components/goals/TaskDeleteModal.svelte';
@@ -35,10 +35,12 @@
     let recommendations: GoalTaskRecommendation[] = $state([]);
     let showDeleteConfirm = $state(false);
     let showTaskFormModal = $state(false);
-    let taskFormMode: 'create' | 'edit' = $state('create');
-    let editingTask: GoalTask | null = $state(null);
+    let taskFormMode = $state<'create' | 'edit'>('create');
+    let editingTask = $state<GoalTask | null>(null);
     let showTaskDeleteModal = $state(false);
-    let deletingTask: GoalTask | null = $state(null);
+    let deletingTask = $state<GoalTask | null>(null);
+    let draggedTaskId = $state<string | null>(null);
+    let dragOverTaskId = $state<string | null>(null);
 
     // Computed
     const completedTasks = $derived(Array.from(completedTaskIds).filter(id => tasks.some(t => t.id === id)).length);
@@ -167,6 +169,142 @@
         } catch (err) {
             console.error('Error completing task:', err);
             showMessage('Error al completar la tarea', 'error');
+        }
+    }
+
+    async function handleUncompleteTask(taskId: string) {
+        try {
+            const success = await tasksStore.uncomplete(goalId, taskId);
+            
+            if (success) {
+                showMessage('↩️ Tarea descompletada', 'success');
+            } else {
+                showMessage('Error al descompletar la tarea', 'error');
+            }
+        } catch (err) {
+            console.error('Error uncompleting task:', err);
+            showMessage('Error al descompletar la tarea', 'error');
+        }
+    }
+
+    function handleTimerStart(taskId: string) {
+        tasksStore.startTimer(taskId);
+        showMessage('⏱️ Cronómetro iniciado', 'success');
+    }
+
+    function handleTimerPause(taskId: string) {
+        tasksStore.pauseTimer(taskId);
+        showMessage('⏸️ Cronómetro pausado', 'success');
+    }
+
+    function handleTimerResume(taskId: string) {
+        tasksStore.resumeTimer(taskId);
+        showMessage('▶️ Cronómetro reanudado', 'success');
+    }
+
+    async function handleTimerStop(taskId: string, seconds: number) {
+        const totalSeconds = tasksStore.stopTimer(taskId);
+        
+        // Crear log con duración
+        await tasksStore.createLog(taskId, 'completed', {
+            duration_seconds: totalSeconds,
+            notes: `Tarea completada en ${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`
+        });
+        
+        showMessage(`✅ Tarea completada en ${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`, 'success');
+    }
+
+    async function handleLoadLogs(taskId: string) {
+        await tasksStore.fetchLogs(taskId);
+    }
+
+    async function handleAddComment(taskId: string, comment: string) {
+        const success = await tasksStore.createLog(taskId, 'comment', {
+            notes: comment
+        });
+        
+        if (success) {
+            showMessage('💬 Comentario agregado', 'success');
+        } else {
+            showMessage('Error al agregar comentario', 'error');
+        }
+    }
+    
+    // Drag and Drop handlers
+    function handleDragStart(e: DragEvent, taskId: string) {
+        draggedTaskId = taskId;
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', taskId);
+        }
+    }
+    
+    function handleDragEnd(e: DragEvent) {
+        draggedTaskId = null;
+        dragOverTaskId = null;
+    }
+    
+    function handleDragOver(e: DragEvent, taskId: string) {
+        e.preventDefault();
+        dragOverTaskId = taskId;
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
+        }
+    }
+    
+    async function handleDrop(e: DragEvent, targetTaskId: string) {
+        e.preventDefault();
+        
+        if (!draggedTaskId || draggedTaskId === targetTaskId) {
+            draggedTaskId = null;
+            dragOverTaskId = null;
+            return;
+        }
+        
+        // Encontrar las tareas
+        const draggedTask = tasks.find(t => t.id === draggedTaskId);
+        const targetTask = tasks.find(t => t.id === targetTaskId);
+        
+        if (!draggedTask || !targetTask) return;
+        
+        try {
+            // Crear nuevo array reordenado
+            const reorderedTasks = [...tasks];
+            const draggedIndex = reorderedTasks.findIndex(t => t.id === draggedTaskId);
+            const targetIndex = reorderedTasks.findIndex(t => t.id === targetTaskId);
+            
+            // Remover la tarea arrastrada
+            const [removed] = reorderedTasks.splice(draggedIndex, 1);
+            // Insertar en la nueva posición
+            reorderedTasks.splice(targetIndex, 0, removed);
+            
+            // Actualizar el orden de todas las tareas
+            const token = authStore.getToken();
+            
+            if (!token) {
+                showMessage('Error: No hay token de autenticación', 'error');
+                return;
+            }
+            
+            // Actualizar cada tarea con su nuevo orden
+            for (let i = 0; i < reorderedTasks.length; i++) {
+                const task = reorderedTasks[i];
+                if (task.id && task.order !== i) {
+                    await tasksStore.update(goalId, task.id, { ...task, order: i });
+                }
+            }
+            
+            showMessage('✅ Orden actualizado', 'success');
+            
+            // Recargar las tareas para reflejar el nuevo orden
+            await tasksStore.fetchForGoal(goalId);
+            
+        } catch (err) {
+            console.error('Error reordering tasks:', err);
+            showMessage('Error al reordenar tareas', 'error');
+        } finally {
+            draggedTaskId = null;
+            dragOverTaskId = null;
         }
     }
 
@@ -373,12 +511,26 @@
                     {:else}
                     <div class="space-y-3">
                         {#each tasks as task (task.id)}
-                            <TaskCard 
+                            <TaskCardEnhanced 
                                 {task}
                                 isCompleted={completedTaskIds.has(task.id || '')}
+                                isDragging={draggedTaskId === task.id}
+                                timer={tasksStore.getTimer(task.id || '')}
+                                logs={tasksStore.logsByOccurrence[tasksStore.occurrenceIdByTask[task.id || '']] || []}
                                 oncomplete={handleCompleteTask}
+                                onuncomplete={handleUncompleteTask}
                                 onedit={handleEditTask}
                                 ondelete={handleDeleteTask}
+                                ontimerstart={handleTimerStart}
+                                ontimerpause={handleTimerPause}
+                                ontimerresume={handleTimerResume}
+                                ontimerstop={handleTimerStop}
+                                onloadlogs={handleLoadLogs}
+                                onaddcomment={handleAddComment}
+                                ondragstart={handleDragStart}
+                                ondragend={handleDragEnd}
+                                ondragover={handleDragOver}
+                                ondrop={handleDrop}
                             />
                         {/each}
                     </div>

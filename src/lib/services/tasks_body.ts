@@ -95,3 +95,80 @@ export async function completeBodyTask(authStore: AuthStore, taskId: string): Pr
         return false;
     }
 }
+
+/**
+ * Uncomplete (revert) a body task
+ */
+export async function uncomplateBodyTask(authStore: AuthStore, taskId: string): Promise<boolean> {
+    try {
+        const response = await authStore.authenticatedFetch(
+            `${BACKEND_URL}/api/tasks/body/${taskId}/uncomplete`,
+            {
+                method: 'POST'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to uncomplete body task: ${response.status}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error uncompleting body task:', error);
+        return false;
+    }
+}
+
+/**
+ * Complete a body task (token-based version)
+ */
+export async function completeBodyTaskWithToken(token: string, taskId: string): Promise<any> {
+    try {
+        const response = await fetch(
+            `${BACKEND_URL}/api/tasks/body/${taskId}/complete`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to complete body task: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error completing body task:', error);
+        throw error;
+    }
+}
+
+/**
+ * Uncomplete a body task (token-based version)
+ */
+export async function uncomplateBodyTaskWithToken(token: string, taskId: string): Promise<any> {
+    try {
+        const response = await fetch(
+            `${BACKEND_URL}/api/tasks/body/${taskId}/uncomplete`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to uncomplete body task: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error uncompleting body task:', error);
+        throw error;
+    }
+}

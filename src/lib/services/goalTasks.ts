@@ -688,6 +688,115 @@ export async function fetchOccurrenceLogs(token: string, occurrenceId: string): 
 }
 
 /**
+ * Complete an occurrence (mark as completed with automatic points)
+ */
+export async function completeOccurrence(
+	token: string,
+	occurrenceId: string,
+	value?: number
+): Promise<any> {
+	try {
+		return await withRetry(async () => {
+			let authToken = token;
+			if (!authToken) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authToken = authStore.getToken() || '';
+			}
+			
+			const response = await fetch(
+				`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/complete`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${authToken}`,
+						'Content-Type': 'application/json',
+						Accept: 'application/json'
+					},
+					body: JSON.stringify(value !== undefined ? { value } : {}),
+					mode: 'cors',
+					cache: 'no-cache'
+				}
+			);
+
+			if (!response.ok) {
+				if (response.status === 401) {
+					const { getAuthStore } = await import('../stores/auth.svelte');
+					const authStore = getAuthStore();
+					authStore.handleUnauthorized();
+					throw new Error('UNAUTHORIZED');
+				}
+				
+				const contentType = response.headers.get('content-type');
+				if (contentType && contentType.includes('application/json')) {
+					const error = await response.json();
+					throw new Error(error.error || `Failed to complete occurrence: ${response.statusText}`);
+				} else {
+					throw new Error(`Failed to complete occurrence: ${response.status} ${response.statusText}`);
+				}
+			}
+
+			return response.json();
+		});
+	} catch (err) {
+		console.error('Error completing occurrence:', err);
+		throw err;
+	}
+}
+
+/**
+ * Uncomplete an occurrence (revert with automatic point subtraction)
+ */
+export async function uncompleteOccurrence(token: string, occurrenceId: string): Promise<any> {
+	try {
+		return await withRetry(async () => {
+			let authToken = token;
+			if (!authToken) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authToken = authStore.getToken() || '';
+			}
+			
+			const response = await fetch(
+				`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/uncomplete`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${authToken}`,
+						Accept: 'application/json',
+						'Content-Type': 'application/json'
+					},
+					mode: 'cors',
+					cache: 'no-cache'
+				}
+			);
+
+			if (!response.ok) {
+				if (response.status === 401) {
+					const { getAuthStore } = await import('../stores/auth.svelte');
+					const authStore = getAuthStore();
+					authStore.handleUnauthorized();
+					throw new Error('UNAUTHORIZED');
+				}
+				
+				const contentType = response.headers.get('content-type');
+				if (contentType && contentType.includes('application/json')) {
+					const error = await response.json();
+					throw new Error(error.error || `Failed to uncomplete occurrence: ${response.statusText}`);
+				} else {
+					throw new Error(`Failed to uncomplete occurrence: ${response.status} ${response.statusText}`);
+				}
+			}
+
+			return response.json();
+		});
+	} catch (err) {
+		console.error('Error uncompleting occurrence:', err);
+		throw err;
+	}
+}
+
+/**
  * Delete an occurrence (uncomplete a task)
  */
 export async function deleteOccurrence(token: string, occurrenceId: string): Promise<void> {

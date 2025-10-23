@@ -95,3 +95,80 @@ export async function completeMindTask(authStore: AuthStore, taskId: string): Pr
         return false;
     }
 }
+
+/**
+ * Uncomplete (revert) a mind task
+ */
+export async function uncomplateMindTask(authStore: AuthStore, taskId: string): Promise<boolean> {
+    try {
+        const response = await authStore.authenticatedFetch(
+            `${BACKEND_URL}/api/tasks/mind/${taskId}/uncomplete`,
+            {
+                method: 'POST'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to uncomplete mind task: ${response.status}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error uncompleting mind task:', error);
+        return false;
+    }
+}
+
+/**
+ * Complete a mind task (token-based version)
+ */
+export async function completeMindTaskWithToken(token: string, taskId: string): Promise<any> {
+    try {
+        const response = await fetch(
+            `${BACKEND_URL}/api/tasks/mind/${taskId}/complete`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to complete mind task: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error completing mind task:', error);
+        throw error;
+    }
+}
+
+/**
+ * Uncomplete a mind task (token-based version)
+ */
+export async function uncomplateMindTaskWithToken(token: string, taskId: string): Promise<any> {
+    try {
+        const response = await fetch(
+            `${BACKEND_URL}/api/tasks/mind/${taskId}/uncomplete`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to uncomplete mind task: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error uncompleting mind task:', error);
+        throw error;
+    }
+}

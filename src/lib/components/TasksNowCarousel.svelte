@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { fade, fly } from 'svelte/transition';
+	import { onMount, onDestroy } from 'svelte';
+	import { fade, fly, scale } from 'svelte/transition';
 	import { 
 		getTasksForNow, 
 		formatTime, 
@@ -9,7 +9,17 @@
 		getTaskTypeIcon,
 		getTaskTypeLabel
 	} from '$lib/services/time-optimizer';
+	import { completeMindTaskWithToken, uncomplateMindTaskWithToken } from '$lib/services/tasks_mind';
+	import { completeBodyTaskWithToken, uncomplateBodyTaskWithToken } from '$lib/services/tasks_body';
+	import { completeOccurrence, uncompleteOccurrence } from '$lib/services/goalTasks';
+	import { getPointsSummary } from '$lib/services/points';
 	import type { TasksNowResponse, TaskNow } from '$lib/types';
+	
+	interface CompletedTask {
+		task: TaskNow;
+		timeoutId: ReturnType<typeof setTimeout>;
+		occurrenceId?: string;
+	}
 
 	// Props
 	interface Props {
@@ -29,6 +39,8 @@
 	let scrollContainer = $state<HTMLDivElement | undefined>();
 	let canScrollLeft = $state(false);
 	let canScrollRight = $state(true);
+	let completedTasks = $state<Map<string, CompletedTask>>(new Map());
+	let processing = $state<Set<string>>(new Set());
 
 	// Computed - todas las tareas en orden cronológico
 	let allTasks = $derived(() => {
@@ -43,6 +55,13 @@
 	onMount(() => {
 		loadTasks();
 		updateScrollButtons();
+	});
+	
+	onDestroy(() => {
+		// Limpiar todos los timeouts activos
+		completedTasks.forEach((completed) => {
+			clearTimeout(completed.timeoutId);
+		});
 	});
 
 	async function loadTasks() {
@@ -66,24 +85,86 @@
 	}
 
 	async function handleTaskComplete(task: TaskNow, event: Event) {
-		event.stopPropagation(); // Prevent triggering task click
+		event.stopPropagation();
 		
-		// TODO: Call completion API here when provided
-		console.log('Completing task:', task.id);
+		if (processing.has(task.id)) return;
 		
-		if (onTaskComplete) {
-			onTaskComplete(task);
-		}
+		processing.add(task.id);
 		
-		// Optimistically remove from UI
-		if (data) {
-			if (task.type === 'goal') {
-				data.goal_tasks = data.goal_tasks.filter(t => t.id !== task.id);
-			} else if (task.type === 'mind') {
-				data.mind_tasks = data.mind_tasks.filter(t => t.id !== task.id);
+		try {
+			let occurrenceId: string | undefined;
+			
+			// Llamar a las funciones de servicio correspondientes
+			if (task.type === 'mind') {
+				await completeMindTaskWithToken(token, task.task_id);
 			} else if (task.type === 'body') {
-				data.body_tasks = data.body_tasks.filter(t => t.id !== task.id);
+				await completeBodyTaskWithToken(token, task.task_id);
+			} else if (task.type === 'goal') {
+				const result = await completeOccurrence(token, task.id);
+				occurrenceId = result.occurrence?.id;
 			}
+			
+			// Marcar como completada con timer de 5 segundos
+			const timeoutId = setTimeout(() => {
+				// Después de 5 segundos, remover definitivamente
+				completedTasks.delete(task.id);
+				removeTaskFromData(task);
+				
+				if (onTaskComplete) {
+					onTaskComplete(task);
+				}
+			}, 5000);
+			
+			completedTasks.set(task.id, { task, timeoutId, occurrenceId });
+			
+		} catch (error) {
+			console.error('Error completing task:', error);
+			error = error instanceof Error ? error.message : 'Failed to complete task';
+		} finally {
+			processing.delete(task.id);
+		}
+	}
+	
+	async function handleTaskUndo(taskId: string, event: Event) {
+		event.stopPropagation();
+		
+		const completed = completedTasks.get(taskId);
+		if (!completed || processing.has(taskId)) return;
+		
+		processing.add(taskId);
+		
+		try {
+			const task = completed.task;
+			
+			// Llamar a las funciones de servicio de uncomplete
+			if (task.type === 'mind') {
+				await uncomplateMindTaskWithToken(token, task.task_id);
+			} else if (task.type === 'body') {
+				await uncomplateBodyTaskWithToken(token, task.task_id);
+			} else if (task.type === 'goal' && completed.occurrenceId) {
+				await uncompleteOccurrence(token, completed.occurrenceId);
+			}
+			
+			// Cancelar el timeout y remover de completadas
+			clearTimeout(completed.timeoutId);
+			completedTasks.delete(taskId);
+			
+		} catch (error) {
+			console.error('Error undoing task:', error);
+		} finally {
+			processing.delete(taskId);
+		}
+	}
+	
+	function removeTaskFromData(task: TaskNow) {
+		if (!data) return;
+		
+		if (task.type === 'goal') {
+			data.goal_tasks = data.goal_tasks.filter(t => t.id !== task.id);
+		} else if (task.type === 'mind') {
+			data.mind_tasks = data.mind_tasks.filter(t => t.id !== task.id);
+		} else if (task.type === 'body') {
+			data.body_tasks = data.body_tasks.filter(t => t.id !== task.id);
 		}
 	}
 
@@ -305,17 +386,31 @@
 									handleTaskClick(task);
 								}
 							}}
-							class="w-full h-full rounded-lg border-2 transition-all p-2 sm:p-3 text-left relative overflow-hidden group/card cursor-pointer {selectedTaskId === task.id 
-								? `border-${getTaskTypeColor(task.type)}-500 bg-${getTaskTypeColor(task.type)}-500/10 scale-105 shadow-2xl shadow-${getTaskTypeColor(task.type)}-500/20` 
-								: 'border-neutral-700 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:border-neutral-600 hover:scale-[1.02] hover:shadow-xl'}"
+							class="w-full h-full rounded-lg border-2 transition-all p-2 sm:p-3 text-left relative overflow-hidden group/card cursor-pointer {completedTasks.has(task.id)
+								? 'border-emerald-500 bg-emerald-500/20 opacity-75'
+								: selectedTaskId === task.id 
+									? `border-${getTaskTypeColor(task.type)}-500 bg-${getTaskTypeColor(task.type)}-500/10 scale-105 shadow-2xl shadow-${getTaskTypeColor(task.type)}-500/20` 
+									: 'border-neutral-700 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:border-neutral-600 hover:scale-[1.02] hover:shadow-xl'}"
 						>
 							<!-- Background pattern -->
 							<div class="absolute inset-0 opacity-5">
 								<div class="absolute inset-0 bg-gradient-to-br from-white to-transparent"></div>
 							</div>
+							
+							<!-- Overlay de completado -->
+							{#if completedTasks.has(task.id)}
+								<div class="absolute inset-0 bg-emerald-500/10 backdrop-blur-[1px] z-10 flex items-center justify-center" transition:fade>
+									<div class="bg-emerald-500/90 px-3 py-1.5 rounded-full text-white text-xs font-semibold shadow-lg flex items-center gap-2">
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+										</svg>
+										<span>¡Completada!</span>
+									</div>
+								</div>
+							{/if}
 
 							<div class="relative z-10">
-								<!-- Header con botón de completado -->
+								<!-- Header con botón de completado/deshacer -->
 								<div class="flex items-start justify-between mb-1.5">
 									<div class="flex items-center gap-1.5">
 										<span class="text-lg sm:text-xl">{getTaskTypeIcon(task.type)}</span>
@@ -329,17 +424,33 @@
 										</div>
 									</div>
 									
-									<!-- Botón de completado -->
-									<button
-										onclick={(e) => handleTaskComplete(task, e)}
-										class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 flex items-center justify-center text-emerald-400 hover:text-white transition-all group/complete hover:scale-110 shadow-lg hover:shadow-emerald-500/25"
-										aria-label="Mark task as complete"
-										title="Marcar como completada"
-									>
-										<svg class="w-4 h-4 sm:w-5 sm:h-5 group-hover/complete:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-										</svg>
-									</button>
+									<!-- Botón de completado o deshacer -->
+									{#if completedTasks.has(task.id)}
+										<button
+											onclick={(e) => handleTaskUndo(task.id, e)}
+											disabled={processing.has(task.id)}
+											class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-amber-500/30 hover:bg-amber-500/50 border-2 border-amber-500/50 hover:border-amber-500/70 flex items-center justify-center text-amber-400 hover:text-white transition-all group/undo hover:scale-110 shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+											aria-label="Undo task completion"
+											title="Deshacer"
+											transition:scale
+										>
+											<svg class="w-4 h-4 sm:w-5 sm:h-5 group-hover/undo:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+											</svg>
+										</button>
+									{:else}
+										<button
+											onclick={(e) => handleTaskComplete(task, e)}
+											disabled={processing.has(task.id)}
+											class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 flex items-center justify-center text-emerald-400 hover:text-white transition-all group/complete hover:scale-110 shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+											aria-label="Mark task as complete"
+											title="Marcar como completada"
+										>
+											<svg class="w-4 h-4 sm:w-5 sm:h-5 group-hover/complete:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+											</svg>
+										</button>
+									{/if}
 								</div>
 								
 								{#if getUrgencyBadge(task)}

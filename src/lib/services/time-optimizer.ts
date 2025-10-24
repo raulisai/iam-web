@@ -6,13 +6,16 @@ import type { TaskNow, TasksNowResponse } from '../types/time-optimizer';
  * Uses aggressive scheduling algorithm to maximize time utilization
  */
 export async function getTasksForNow(token: string): Promise<TasksNowResponse> {
-	const response = await fetch(`${BACKEND_URL}/api/time-optimizer/tasks-now`, {
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`
+	// Obtener authStore para usar authenticatedFetch que maneja CORS correctamente
+	const { getAuthStore } = await import('../stores/auth.svelte');
+	const authStore = getAuthStore();
+	
+	const response = await authStore.authenticatedFetch(
+		`${BACKEND_URL}/api/time-optimizer/tasks-now`,
+		{
+			method: 'GET'
 		}
-	});
+	);
 
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({ error: 'Failed to fetch tasks' }));

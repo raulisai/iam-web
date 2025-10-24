@@ -1,6 +1,25 @@
 import { BACKEND_URL } from '../config';
 import type { Goal, CreateGoalData } from '../types';
 
+async function authFetch(
+	token: string | undefined,
+	url: string,
+	options: RequestInit = {}
+): Promise<Response> {
+	const { getAuthStore } = await import('../stores/auth.svelte');
+	const authStore = getAuthStore();
+	const headers = new Headers(options.headers);
+
+	if (token && !headers.has('Authorization')) {
+		headers.set('Authorization', `Bearer ${token}`);
+	}
+
+	return authStore.authenticatedFetch(url, {
+		...options,
+		headers
+	});
+}
+
 
 /**
  * Fetch all goals for authenticated user
@@ -13,12 +32,8 @@ export async function fetchGoals(token: string, isActive?: boolean): Promise<Goa
 
 	const url = `${BACKEND_URL}/api/goals/${params.toString() ? '?' + params.toString() : ''}`;
 
-	const response = await fetch(url, {
-		method: 'GET',
-		headers: {
-			'Authorization': `Bearer ${token}`,
-			'Accept': 'application/json'
-		}
+	const response = await authFetch(token, url, {
+		method: 'GET'
 	});
 
 	if (!response.ok) {
@@ -40,12 +55,10 @@ export async function fetchGoals(token: string, isActive?: boolean): Promise<Goa
  * Create a new goal
  */
 export async function createGoal(token: string, goalData: CreateGoalData): Promise<Goal> {
-	const response = await fetch(`${BACKEND_URL}/api/goals/`, {
+	const response = await authFetch(token, `${BACKEND_URL}/api/goals/`, {
 		method: 'POST',
 		headers: {
-			'Authorization': `Bearer ${token}`,
-			'Content-Type': 'application/json',
-			'Accept': 'application/json'
+			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify(goalData)
 	});
@@ -68,12 +81,10 @@ export async function createGoal(token: string, goalData: CreateGoalData): Promi
  * Update a goal
  */
 export async function updateGoal(token: string, goalId: string, updates: Partial<Goal>): Promise<Goal> {
-	const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}`, {
+	const response = await authFetch(token, `${BACKEND_URL}/api/goals/${goalId}`, {
 		method: 'PUT',
 		headers: {
-			'Authorization': `Bearer ${token}`,
-			'Content-Type': 'application/json',
-			'Accept': 'application/json'
+			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify(updates)
 	});
@@ -96,12 +107,8 @@ export async function updateGoal(token: string, goalId: string, updates: Partial
  * Delete a goal
  */
 export async function deleteGoal(token: string, goalId: string): Promise<void> {
-	const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}`, {
-		method: 'DELETE',
-		headers: {
-			'Authorization': `Bearer ${token}`,
-			'Accept': 'application/json'
-		}
+	const response = await authFetch(token, `${BACKEND_URL}/api/goals/${goalId}`, {
+		method: 'DELETE'
 	});
 
 	if (!response.ok) {

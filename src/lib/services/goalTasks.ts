@@ -8,6 +8,25 @@ import type {
 	TaskLogAction
 } from '../types';
 
+async function authFetch(
+	token: string | undefined,
+	url: string,
+	options: RequestInit = {}
+): Promise<Response> {
+	const { getAuthStore } = await import('../stores/auth.svelte');
+	const authStore = getAuthStore();
+	const headers = new Headers(options.headers);
+
+	if (token && !headers.has('Authorization')) {
+		headers.set('Authorization', `Bearer ${token}`);
+	}
+
+	return authStore.authenticatedFetch(url, {
+		...options,
+		headers
+	});
+}
+
 /**
  * Función de utilidad para realizar solicitudes HTTP con reintentos
  * @param fetchFn - Función que realiza la solicitud fetch
@@ -72,26 +91,15 @@ export async function fetchTaskRecommendations(
 	try {
 		// Usar el store de autenticación o el token proporcionado
 		return await withRetry(async () => {
-			// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(
+			const response = await authFetch(
+				token,
 				`${BACKEND_URL}/api/goals/${goalId}/recommendations?${params.toString()}`,
 				{
 					method: 'POST',
 					headers: {
-						Authorization: `Bearer ${authToken}`,
-						'Content-Type': 'application/json',
-						Accept: 'application/json'
+						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify(requestBody),
-					mode: 'cors',
-					cache: 'no-cache'
+					body: JSON.stringify(requestBody)
 				}
 			);
 
@@ -145,24 +153,12 @@ export async function createGoalTask(
 ): Promise<GoalTask> {
 	try {
 		return await withRetry(async () => {
-			// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}/tasks`, {
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/${goalId}/tasks`, {
 				method: 'POST',
 				headers: {
-					Authorization: `Bearer ${authToken}`,
-					'Content-Type': 'application/json',
-					Accept: 'application/json'
+					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify(taskData),
-				mode: 'cors',
-				cache: 'no-cache'
+				body: JSON.stringify(taskData)
 			});
 
 			if (!response.ok) {
@@ -201,23 +197,8 @@ export async function fetchGoalTasks(token: string, goalId: string): Promise<Goa
 	try {
 		// Usar el store de autenticación o el token proporcionado
 		return await withRetry(async () => {
-			// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/${goalId}/tasks`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-					Accept: 'application/json',
-					'Content-Type': 'application/json'
-				},
-				mode: 'cors',
-				cache: 'no-cache'
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/${goalId}/tasks`, {
+				method: 'GET'
 			});
 
 			if (!response.ok) {
@@ -252,24 +233,12 @@ export async function updateGoalTask(
 ): Promise<GoalTask> {
 	try {
 		return await withRetry(async () => {
-			// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/tasks/${taskId}`, {
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/tasks/${taskId}`, {
 				method: 'PUT',
 				headers: {
-					Authorization: `Bearer ${authToken}`,
-					'Content-Type': 'application/json',
-					Accept: 'application/json'
+					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify(taskData),
-				mode: 'cors',
-				cache: 'no-cache'
+				body: JSON.stringify(taskData)
 			});
 
 			if (!response.ok) {
@@ -314,30 +283,19 @@ export async function createTaskOccurrence(
 	try {
 		// Usar withRetry para intentar la operación hasta 3 veces
 		return await withRetry(async () => {
-			// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(
+			const response = await authFetch(
+				token,
 				`${BACKEND_URL}/api/goals/tasks/${taskId}/occurrences`,
 				{
 					method: 'POST',
 					headers: {
-						Authorization: `Bearer ${authToken}`,
-						'Content-Type': 'application/json',
-						Accept: 'application/json'
+						'Content-Type': 'application/json'
 					},
 					body: JSON.stringify({
 						scheduled_at: new Date().toISOString(),
 						notes: notes || '',
 						value: value || 1
-					}),
-					mode: 'cors',
-					cache: 'no-cache'
+					})
 				}
 			);
 
@@ -388,24 +346,8 @@ export async function fetchTaskOccurrences(token: string, taskId: string): Promi
 	try {
 		// Usar el store de autenticación o el token proporcionado
 		return await withRetry(async () => {
-			// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/tasks/${taskId}/occurrences`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-					Accept: 'application/json',
-					'Content-Type': 'application/json'
-				},
-				// Asegurar que no se lanzan errores CORS en consola
-				mode: 'cors',
-				cache: 'no-cache'
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/tasks/${taskId}/occurrences`, {
+				method: 'GET'
 			});
 
 			if (!response.ok) {
@@ -443,7 +385,6 @@ export async function fetchCompletedTaskIds(token: string, tasks: GoalTask[]): P
 	}
 
 	try {
-		// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
 		let authToken = token;
 		if (!authToken) {
 			const { getAuthStore } = await import('../stores/auth.svelte');
@@ -488,23 +429,8 @@ export async function fetchCompletedTaskIds(token: string, tasks: GoalTask[]): P
 export async function deleteGoalTask(token: string, goalId: string, taskId: string): Promise<void> {
 	try {
 		await withRetry(async () => {
-			// Obtener token (usar el token proporcionado o buscarlo en el store de auth)
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/tasks/${taskId}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-					Accept: 'application/json',
-					'Content-Type': 'application/json'
-				},
-				mode: 'cors',
-				cache: 'no-cache'
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/tasks/${taskId}`, {
+				method: 'DELETE'
 			});
 
 			if (!response.ok) {
@@ -542,22 +468,8 @@ export async function deleteGoalTask(token: string, goalId: string, taskId: stri
 export async function fetchOccurrenceById(token: string, occurrenceId: string): Promise<TaskOccurrence | null> {
 	try {
 		return await withRetry(async () => {
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-					Accept: 'application/json',
-					'Content-Type': 'application/json'
-				},
-				mode: 'cors',
-				cache: 'no-cache'
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/occurrences/${occurrenceId}`, {
+				method: 'GET'
 			});
 
 			if (!response.ok) {
@@ -595,28 +507,18 @@ export async function createOccurrenceLog(
 ): Promise<TaskLog> {
 	try {
 		return await withRetry(async () => {
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(
+			const response = await authFetch(
+				token,
 				`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/log`,
 				{
 					method: 'POST',
 					headers: {
-						Authorization: `Bearer ${authToken}`,
-						'Content-Type': 'application/json',
-						Accept: 'application/json'
+						'Content-Type': 'application/json'
 					},
 					body: JSON.stringify({
 						action,
 						metadata: metadata || {}
-					}),
-					mode: 'cors',
-					cache: 'no-cache'
+					})
 				}
 			);
 
@@ -651,22 +553,8 @@ export async function createOccurrenceLog(
 export async function fetchOccurrenceLogs(token: string, occurrenceId: string): Promise<TaskLog[]> {
 	try {
 		return await withRetry(async () => {
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/logs`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-					Accept: 'application/json',
-					'Content-Type': 'application/json'
-				},
-				mode: 'cors',
-				cache: 'no-cache'
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/logs`, {
+				method: 'GET'
 			});
 
 			if (!response.ok) {
@@ -697,25 +585,15 @@ export async function completeOccurrence(
 ): Promise<any> {
 	try {
 		return await withRetry(async () => {
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(
+			const response = await authFetch(
+				token,
 				`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/complete`,
 				{
 					method: 'POST',
 					headers: {
-						Authorization: `Bearer ${authToken}`,
-						'Content-Type': 'application/json',
-						Accept: 'application/json'
+						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify(value !== undefined ? { value } : {}),
-					mode: 'cors',
-					cache: 'no-cache'
+					body: JSON.stringify(value !== undefined ? { value } : {})
 				}
 			);
 
@@ -750,24 +628,11 @@ export async function completeOccurrence(
 export async function uncompleteOccurrence(token: string, occurrenceId: string): Promise<any> {
 	try {
 		return await withRetry(async () => {
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(
+			const response = await authFetch(
+				token,
 				`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/uncomplete`,
 				{
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${authToken}`,
-						Accept: 'application/json',
-						'Content-Type': 'application/json'
-					},
-					mode: 'cors',
-					cache: 'no-cache'
+					method: 'POST'
 				}
 			);
 
@@ -802,22 +667,8 @@ export async function uncompleteOccurrence(token: string, occurrenceId: string):
 export async function deleteOccurrence(token: string, occurrenceId: string): Promise<void> {
 	try {
 		await withRetry(async () => {
-			let authToken = token;
-			if (!authToken) {
-				const { getAuthStore } = await import('../stores/auth.svelte');
-				const authStore = getAuthStore();
-				authToken = authStore.getToken() || '';
-			}
-			
-			const response = await fetch(`${BACKEND_URL}/api/goals/occurrences/${occurrenceId}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-					Accept: 'application/json',
-					'Content-Type': 'application/json'
-				},
-				mode: 'cors',
-				cache: 'no-cache'
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/occurrences/${occurrenceId}`, {
+				method: 'DELETE'
 			});
 
 			if (!response.ok) {

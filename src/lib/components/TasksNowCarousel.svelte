@@ -9,11 +9,10 @@
 		getTaskTypeIcon,
 		getTaskTypeLabel
 	} from '$lib/services/time-optimizer';
-	import { completeMindTaskWithToken, uncomplateMindTaskWithToken } from '$lib/services/tasks_mind';
-	import { completeBodyTaskWithToken, uncomplateBodyTaskWithToken } from '$lib/services/tasks_body';
+	import { completeMindTask, uncomplateMindTask } from '$lib/services/tasks_mind';
+	import { completeBodyTask, uncomplateBodyTask } from '$lib/services/tasks_body';
 	import { completeOccurrence, uncompleteOccurrence } from '$lib/services/goalTasks';
-	import { getPointsSummary } from '$lib/services/points';
-	import type { TasksNowResponse, TaskNow } from '$lib/types';
+	import type { AuthStore, TasksNowResponse, TaskNow } from '$lib/types';
 	
 	interface CompletedTask {
 		task: TaskNow;
@@ -41,6 +40,14 @@
 	let canScrollRight = $state(true);
 	let completedTasks = $state<Map<string, CompletedTask>>(new Map());
 	let processing = $state<Set<string>>(new Set());
+	let authStore: AuthStore | null = null;
+
+	async function ensureAuthStore(): Promise<AuthStore> {
+		if (authStore) return authStore;
+		const { getAuthStore } = await import('$lib/stores/auth.svelte');
+		authStore = getAuthStore();
+		return authStore;
+	}
 
 	// Computed - todas las tareas en orden cronológico
 	let allTasks = $derived(() => {
@@ -96,9 +103,11 @@
 			
 			// Llamar a las funciones de servicio correspondientes
 			if (task.type === 'mind') {
-				await completeMindTaskWithToken(token, task.task_id);
+				const store = await ensureAuthStore();
+				await completeMindTask(store, task.task_id);
 			} else if (task.type === 'body') {
-				await completeBodyTaskWithToken(token, task.task_id);
+				const store = await ensureAuthStore();
+				await completeBodyTask(store, task.task_id);
 			} else if (task.type === 'goal') {
 				const result = await completeOccurrence(token, task.id);
 				occurrenceId = result.occurrence?.id;
@@ -117,9 +126,9 @@
 			
 			completedTasks.set(task.id, { task, timeoutId, occurrenceId });
 			
-		} catch (error) {
-			console.error('Error completing task:', error);
-			error = error instanceof Error ? error.message : 'Failed to complete task';
+		} catch (err) {
+			console.error('Error completing task:', err);
+			error = err instanceof Error ? err.message : 'Failed to complete task';
 		} finally {
 			processing.delete(task.id);
 		}
@@ -138,9 +147,11 @@
 			
 			// Llamar a las funciones de servicio de uncomplete
 			if (task.type === 'mind') {
-				await uncomplateMindTaskWithToken(token, task.task_id);
+				const store = await ensureAuthStore();
+				await uncomplateMindTask(store, task.task_id);
 			} else if (task.type === 'body') {
-				await uncomplateBodyTaskWithToken(token, task.task_id);
+				const store = await ensureAuthStore();
+				await uncomplateBodyTask(store, task.task_id);
 			} else if (task.type === 'goal' && completed.occurrenceId) {
 				await uncompleteOccurrence(token, completed.occurrenceId);
 			}

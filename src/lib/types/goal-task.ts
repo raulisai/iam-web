@@ -2,6 +2,8 @@ export type TaskPriority = 'low' | 'medium' | 'high';
 
 export interface GoalTask {
 	id?: string;
+	goal_id?: string;
+	user_id?: string;
 	title: string;
 	description: string;
 	priority: TaskPriority;
@@ -12,6 +14,8 @@ export interface GoalTask {
 	order?: number;
 	schedule_rrule?: string;
 	due_at?: string;
+	created_at?: string;
+	updated_at?: string;
 }
 
 export interface GoalTaskRecommendation extends GoalTask {
@@ -41,10 +45,25 @@ export interface TaskOccurrence {
 	task_id: string;
 	goal_id: string;
 	user_id?: string;
-	completed_at: string;
+	completed_at?: string | null;
 	notes?: string;
 	value?: number;
 	scheduled_at?: string;
+}
+
+export interface TaskOccurrenceWithStatus extends TaskOccurrence {
+	status?: string;
+	last_action?: string;
+	last_value?: number | null;
+}
+
+export interface TaskOccurrenceLog extends TaskLog {
+	occurrence_id?: string;
+}
+
+export interface GoalProgressSummary {
+	goal_id: string;
+	progress_percent: number;
 }
 
 export type TaskLogAction = 'started' | 'paused' | 'resumed' | 'completed' | 'skipped' | 'uncompleted' | 'comment';

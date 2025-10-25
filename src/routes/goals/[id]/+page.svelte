@@ -531,6 +531,7 @@
                                 ondragend={handleDragEnd}
                                 ondragover={handleDragOver}
                                 ondrop={handleDrop}
+                                onviewdetail={(taskId) => goto(`/goals/task/${taskId}`)}
                             />
                         {/each}
                     </div>

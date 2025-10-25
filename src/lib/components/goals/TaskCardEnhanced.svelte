@@ -24,6 +24,7 @@
         ondragend?: (e: DragEvent) => void;
         ondragover?: (e: DragEvent, taskId: string) => void;
         ondrop?: (e: DragEvent, taskId: string) => void;
+        onviewdetail?: (taskId: string) => void;
     }
 
     let { 
@@ -45,7 +46,8 @@
         ondragstart,
         ondragend,
         ondragover,
-        ondrop
+        ondrop,
+        onviewdetail
     }: Props = $props();
     
     const priorityColors = {
@@ -359,6 +361,18 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Empezar a trabajar
+                    </button>
+                {/if}
+
+                {#if task.goal_id && onviewdetail}
+                    <button
+                        onclick={() => onviewdetail?.(task.id || '')}
+                        class="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 text-white/80 text-sm font-medium rounded-lg transition-all border border-white/10"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Ver detalle
                     </button>
                 {/if}
 

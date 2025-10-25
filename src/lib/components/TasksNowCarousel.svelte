@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+    import { goto } from '$app/navigation';
 	import { fade, fly, scale } from 'svelte/transition';
 	import { 
 		getTasksForNow, 
@@ -88,6 +89,10 @@
 		selectedTaskId = task.id;
 		if (onTaskClick) {
 			onTaskClick(task);
+		}
+
+		if (task.type === 'goal' && task.task_id) {
+			goto(`/goals/task/${task.task_id}`);
 		}
 	}
 

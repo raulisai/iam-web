@@ -4,6 +4,9 @@ import type {
 	GoalTaskRecommendation,
 	GoalTaskRecommendationResponse,
 	TaskOccurrence,
+	TaskOccurrenceLog,
+	TaskOccurrenceWithStatus,
+	GoalProgressSummary,
 	TaskLog,
 	TaskLogAction
 } from '../types';
@@ -55,6 +58,120 @@ async function withRetry<T>(
 	throw lastError;
 }
 
+/**
+ * Get a single goal task
+ */
+export async function fetchGoalTaskById(token: string, taskId: string): Promise<GoalTask | null> {
+	try {
+		const response = await authFetch(token, `${BACKEND_URL}/api/goals/tasks/${taskId}`, {
+			method: 'GET'
+		});
+
+		if (!response.ok) {
+			if (response.status === 401) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authStore.handleUnauthorized();
+				throw new Error('UNAUTHORIZED');
+			}
+			if (response.status === 404) {
+				return null;
+			}
+			throw new Error(`Failed to fetch goal task: ${response.statusText}`);
+		}
+
+		return response.json();
+	} catch (err) {
+		if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+			throw err;
+		}
+		console.error('Error fetching goal task:', err);
+		return null;
+	}
+}
+
+/**
+ * Get task occurrences with status
+ */
+export async function fetchTaskOccurrencesWithStatus(
+	token: string,
+	taskId: string,
+	params?: {
+		start_date?: string;
+		end_date?: string;
+		include_status?: boolean;
+	}
+): Promise<TaskOccurrenceWithStatus[]> {
+	try {
+		const searchParams = new URLSearchParams();
+		if (params?.start_date) searchParams.append('start_date', params.start_date);
+		if (params?.end_date) searchParams.append('end_date', params.end_date);
+		if (params?.include_status !== undefined) {
+			searchParams.append('include_status', String(params.include_status));
+		}
+
+		const url = `${BACKEND_URL}/api/goals/tasks/${taskId}/occurrences${
+			searchParams.size ? `?${searchParams.toString()}` : ''
+		}`;
+
+		const response = await authFetch(token, url, {
+			method: 'GET'
+		});
+
+		if (!response.ok) {
+			if (response.status === 401) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authStore.handleUnauthorized();
+				throw new Error('UNAUTHORIZED');
+			}
+			if (response.status === 404) {
+				return [];
+			}
+			throw new Error(`Failed to fetch task occurrences: ${response.statusText}`);
+		}
+
+		return response.json();
+	} catch (err) {
+		if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+			throw err;
+		}
+		console.error('Error fetching task occurrences with status:', err);
+		return [];
+	}
+}
+
+export async function fetchGoalProgress(
+	token: string,
+	goalId: string
+): Promise<GoalProgressSummary | null> {
+	try {
+		const response = await authFetch(token, `${BACKEND_URL}/api/goals/${goalId}/progress`, {
+			method: 'GET'
+		});
+
+		if (!response.ok) {
+			if (response.status === 401) {
+				const { getAuthStore } = await import('../stores/auth.svelte');
+				const authStore = getAuthStore();
+				authStore.handleUnauthorized();
+				throw new Error('UNAUTHORIZED');
+			}
+			if (response.status === 404) {
+				return null;
+			}
+			throw new Error(`Failed to fetch goal progress: ${response.statusText}`);
+		}
+
+		return response.json();
+	} catch (err) {
+		if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+			throw err;
+		}
+		console.error('Error fetching goal progress:', err);
+		return null;
+	}
+}
 
 /**
  * Get AI-powered task recommendations for a goal
@@ -542,7 +659,10 @@ export async function createOccurrenceLog(
 /**
  * Get all logs for an occurrence
  */
-export async function fetchOccurrenceLogs(token: string, occurrenceId: string): Promise<TaskLog[]> {
+export async function fetchOccurrenceLogs(
+	token: string,
+	occurrenceId: string
+): Promise<TaskOccurrenceLog[]> {
 	try {
 		return await withRetry(async () => {
 			const response = await authFetch(token, `${BACKEND_URL}/api/goals/occurrences/${occurrenceId}/logs`, {

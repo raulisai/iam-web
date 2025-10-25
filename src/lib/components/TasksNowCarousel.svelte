@@ -27,6 +27,16 @@
 		occurrenceId?: string;
 	}
 
+	type GoalSessionState = { occurrenceId: string; startedAt: string };
+
+	interface CachedTasksNowEntry {
+		savedAt: string;
+		data: TasksNowResponse;
+		sessions: Record<string, GoalSessionState>;
+	}
+
+	const CACHE_STORAGE_KEY = 'tasks_now_carousel_v1';
+
 	// Props
 	interface Props {
 		token: string;
@@ -48,8 +58,9 @@
 	let completedTasks = $state<Map<string, CompletedTask>>(new Map());
 	let processing = $state<Set<string>>(new Set());
 	let authStore: AuthStore | null = null;
-	let activeGoalSessions = $state<Record<string, { occurrenceId: string; startedAt: string }>>({});
+	let activeGoalSessions = $state<Record<string, GoalSessionState>>({});
 	let goalSessionTimers = $state<Record<string, { intervalId: ReturnType<typeof setInterval>; elapsedSeconds: number }>>({});
+	let lastLoadedAt = $state<string | null>(null);
 
 	async function ensureAuthStore(): Promise<AuthStore> {
 		if (authStore) return authStore;
@@ -69,7 +80,14 @@
 	});
 
 	onMount(() => {
-		loadTasks();
+		if (restoreFromCache()) {
+			// Si ya teníamos datos del mismo día, evitamos cargar inmediatamente
+			if (!isCacheFreshForToday(lastLoadedAt)) {
+				void loadTasks();
+			}
+		} else {
+			void loadTasks();
+		}
 		updateScrollButtons();
 	});
 	
@@ -91,6 +109,47 @@
 			const { [taskId]: _, ...rest } = goalSessionTimers;
 			goalSessionTimers = rest;
 		}
+	}
+
+	function saveCache(entry: CachedTasksNowEntry) {
+		if (typeof window === 'undefined') return;
+		try {
+			localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(entry));
+		} catch (err) {
+			console.error('Error saving tasks-now cache:', err);
+		}
+	}
+
+	function restoreFromCache(): boolean {
+		if (typeof window === 'undefined') return false;
+		try {
+			const raw = localStorage.getItem(CACHE_STORAGE_KEY);
+			if (!raw) return false;
+			const entry = JSON.parse(raw) as CachedTasksNowEntry;
+			data = entry.data;
+			lastLoadedAt = entry.savedAt;
+			activeGoalSessions = entry.sessions ?? {};
+			Object.entries(activeGoalSessions).forEach(([taskId, session]) => {
+				startGoalSessionTimer(taskId, session.startedAt);
+			});
+			loading = false;
+			return true;
+		} catch (err) {
+			console.error('Error restoring tasks-now cache:', err);
+			return false;
+		}
+	}
+
+	function isCacheFreshForToday(savedAt: string | null): boolean {
+		if (!savedAt) return false;
+		const savedDate = new Date(savedAt);
+		if (Number.isNaN(savedDate.getTime())) return false;
+		const now = new Date();
+		return (
+			savedDate.getFullYear() === now.getFullYear() &&
+			savedDate.getMonth() === now.getMonth() &&
+			savedDate.getDate() === now.getDate()
+		);
 	}
 
 	async function handleGoalTaskStart(task: TaskNow, event: Event) {
@@ -223,6 +282,12 @@
 				mind_tasks: response.mind_tasks ?? [],
 				body_tasks: response.body_tasks ?? []
 			};
+			lastLoadedAt = new Date().toISOString();
+			saveCache({
+				savedAt: lastLoadedAt,
+				data,
+				sessions: activeGoalSessions
+			});
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load tasks';
 			console.error('Error loading tasks:', e);

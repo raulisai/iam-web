@@ -97,6 +97,7 @@
 		if (processing.has(task.id)) return;
 		
 		processing.add(task.id);
+		processing = new Set(processing);
 		
 		try {
 			let occurrenceId: string | undefined;
@@ -117,6 +118,7 @@
 			const timeoutId = setTimeout(() => {
 				// Después de 5 segundos, remover definitivamente
 				completedTasks.delete(task.id);
+				completedTasks = new Map(completedTasks);
 				removeTaskFromData(task);
 				
 				if (onTaskComplete) {
@@ -125,12 +127,14 @@
 			}, 5000);
 			
 			completedTasks.set(task.id, { task, timeoutId, occurrenceId });
+			completedTasks = new Map(completedTasks);
 			
 		} catch (err) {
 			console.error('Error completing task:', err);
 			error = err instanceof Error ? err.message : 'Failed to complete task';
 		} finally {
 			processing.delete(task.id);
+			processing = new Set(processing);
 		}
 	}
 	
@@ -141,6 +145,7 @@
 		if (!completed || processing.has(taskId)) return;
 		
 		processing.add(taskId);
+		processing = new Set(processing);
 		
 		try {
 			const task = completed.task;
@@ -159,11 +164,13 @@
 			// Cancelar el timeout y remover de completadas
 			clearTimeout(completed.timeoutId);
 			completedTasks.delete(taskId);
+			completedTasks = new Map(completedTasks);
 			
 		} catch (error) {
 			console.error('Error undoing task:', error);
 		} finally {
 			processing.delete(taskId);
+			processing = new Set(processing);
 		}
 	}
 	
@@ -410,7 +417,7 @@
 							
 							<!-- Overlay de completado -->
 							{#if completedTasks.has(task.id)}
-								<div class="absolute inset-0 bg-emerald-500/10 backdrop-blur-[1px] z-10 flex items-center justify-center" transition:fade>
+								<div class="absolute inset-0 bg-emerald-500/10 backdrop-blur-[1px] z-10 flex items-center justify-center pointer-events-none" transition:fade>
 									<div class="bg-emerald-500/90 px-3 py-1.5 rounded-full text-white text-xs font-semibold shadow-lg flex items-center gap-2">
 										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>

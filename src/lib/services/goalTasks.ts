@@ -380,6 +380,87 @@ export async function updateGoalTask(
 }
 
 /**
+ * Iniciar una sesión de trabajo para una task creando una nueva occurrence y registrando el inicio
+ */
+export async function startGoalTask(
+	token: string,
+	taskId: string,
+	options?: { scheduledAt?: string; notes?: string }
+): Promise<TaskOccurrenceWithStatus | null> {
+	const scheduledAt = options?.scheduledAt ?? new Date().toISOString();
+
+	try {
+		return await withRetry(async () => {
+			const response = await authFetch(token, `${BACKEND_URL}/api/goals/tasks/${taskId}/occurrences`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					scheduled_at: scheduledAt,
+					notes: options?.notes ?? ''
+				})
+			});
+
+			if (!response.ok) {
+				if (response.status === 401) {
+					const { getAuthStore } = await import('../stores/auth.svelte');
+					const authStore = getAuthStore();
+					authStore.handleUnauthorized();
+					throw new Error('UNAUTHORIZED');
+				}
+				if (response.status === 404) {
+					throw new Error('Task not found to start');
+				}
+
+				const contentType = response.headers.get('content-type');
+				if (contentType && contentType.includes('application/json')) {
+					const error = await response.json();
+					throw new Error(error.error || `Failed to start task occurrence: ${response.statusText}`);
+				}
+
+				throw new Error(`Failed to start task occurrence: ${response.status} ${response.statusText}`);
+			}
+
+			const occurrence = (await response.json()) as TaskOccurrence;
+
+			if (occurrence?.id) {
+				try {
+					await createOccurrenceLog(token, occurrence.id, 'started', {
+						timer_start: scheduledAt,
+						notes: 'Sesión iniciada desde la vista de detalle'
+					});
+				} catch (logError) {
+					console.error('Error registrando inicio de occurrence:', logError);
+				}
+			}
+
+			// Obtener occurrence con estado para reflejar últimos datos
+			const occurrencesWithStatus = await fetchTaskOccurrencesWithStatus(token, taskId, {
+				include_status: true
+			});
+
+			return (
+				occurrencesWithStatus.find(occ => occ.id === occurrence?.id) ||
+				(occurrence
+					? ({
+						...occurrence,
+						status: 'in_progress',
+						last_action: 'started'
+					} satisfies TaskOccurrenceWithStatus)
+					: null)
+			);
+		});
+	} catch (err) {
+		if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+			throw err;
+		}
+		console.error('Error starting goal task:', err);
+		throw err;
+	}
+}
+
+/**
  * Create occurrence (mark task as completed)
  */
 export async function createTaskOccurrence(
@@ -403,7 +484,7 @@ export async function createTaskOccurrence(
 					body: JSON.stringify({
 						scheduled_at: new Date().toISOString(),
 						notes: notes || '',
-						value: value || 1
+						value: value ?? 1
 					})
 				}
 			);

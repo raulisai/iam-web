@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { page } from '$app/stores';
     import { getAuthStore } from '$lib/stores/auth.svelte';
     import { initializeGoalsStore } from '$lib/stores/goals.svelte';
@@ -7,8 +7,12 @@
         fetchGoalTaskById,
         fetchGoalProgress,
         fetchTaskOccurrencesWithStatus,
-        fetchOccurrenceLogs
+        fetchOccurrenceLogs,
+        startGoalTask,
+        completeOccurrence,
+        createOccurrenceLog
     } from '$lib/services/goalTasks';
+    import PomodoroTimer from '$lib/components/goals/PomodoroTimer.svelte';
     import type {
         GoalTask,
         Goal,
@@ -16,6 +20,8 @@
         TaskOccurrenceWithStatus,
         TaskOccurrenceLog
     } from '$lib/types';
+
+    type PomodoroMode = 'focus' | 'short_break' | 'long_break';
 
     const goalsStore = initializeGoalsStore();
 
@@ -29,6 +35,28 @@
     let goalProgress = $state<GoalProgressSummary | null>(null);
     let occurrences = $state<TaskOccurrenceWithStatus[]>([]);
     let recentLogs = $state<TaskOccurrenceLog[]>([]);
+
+    let activeOccurrence = $state<TaskOccurrenceWithStatus | null>(null);
+    let activeSessionStartedAt = $state<string | null>(null);
+    let activeElapsedSeconds = $state(0);
+    let lastSessionDuration = $state<string | null>(null);
+    let pomodoroMode = $state<PomodoroMode>('focus');
+    let feedback = $state<{ tone: 'positive' | 'negative'; message: string } | null>(null);
+    let isStartingSession = $state(false);
+    let isCompletingSession = $state(false);
+
+    let activeTimerInterval: number | null = null;
+    let feedbackTimeout: number | null = null;
+
+    const hasActiveSession = $derived(Boolean(activeOccurrence && activeOccurrence.status !== 'completed'));
+    const activeSessionStatusLabel = $derived(hasActiveSession ? 'En progreso' : 'Pendiente');
+    const activeElapsedReadable = $derived(hasActiveSession ? formatSeconds(activeElapsedSeconds) : '—');
+
+    const pomodoroModeLabels: Record<PomodoroMode, string> = {
+        focus: 'Foco',
+        short_break: 'Descanso corto',
+        long_break: 'Descanso largo'
+    };
 
     const dateTimeFormatter = new Intl.DateTimeFormat('es-MX', {
         dateStyle: 'medium',
@@ -71,24 +99,13 @@
                 ? goalsStore.getById(taskDetail.goal_id) ?? null
                 : null;
 
-            const [occurrenceList, progress] = await Promise.all([
-                fetchTaskOccurrencesWithStatus(token, taskId, { include_status: true }),
+            const [{ sorted, active }, progress] = await Promise.all([
+                refreshOccurrences(token),
                 taskDetail.goal_id ? fetchGoalProgress(token, taskDetail.goal_id) : Promise.resolve(null)
             ]);
 
-            occurrences = occurrenceList
-                .slice()
-                .sort((a, b) => getOccurrenceTime(b) - getOccurrenceTime(a));
-
             goalProgress = progress;
-
-            if (occurrences.length > 0 && occurrences[0].id) {
-                loadingLogs = true;
-                const logs = await fetchOccurrenceLogs(token, occurrences[0].id!);
-                recentLogs = logs.slice(0, 5);
-            } else {
-                recentLogs = [];
-            }
+            await loadRecentLogs(token, active ?? sorted[0] ?? null);
         } catch (err) {
             console.error('Error loading goal task detail:', err);
             error = err instanceof Error ? err.message : 'No se pudo cargar la tarea.';
@@ -103,6 +120,245 @@
         if (occurrence.completed_at) return new Date(occurrence.completed_at).getTime();
         return 0;
     }
+
+    function sortOccurrencesDescending(list: TaskOccurrenceWithStatus[]): TaskOccurrenceWithStatus[] {
+        return list.slice().sort((a, b) => getOccurrenceTime(b) - getOccurrenceTime(a));
+    }
+
+    function formatSeconds(totalSeconds: number): string {
+        const safeSeconds = Math.max(0, totalSeconds);
+        const hours = Math.floor(safeSeconds / 3600);
+        const minutes = Math.floor((safeSeconds % 3600) / 60);
+        const seconds = safeSeconds % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${seconds}s`;
+        }
+        if (minutes > 0) {
+            return `${minutes}m ${seconds}s`;
+        }
+        return `${seconds}s`;
+    }
+
+    function pickActiveOccurrence(list: TaskOccurrenceWithStatus[]): TaskOccurrenceWithStatus | null {
+        return (
+            list.find((occ) => occ.status === 'in_progress' || occ.last_action === 'started') ||
+            null
+        );
+    }
+
+    function clearActiveTimer(): void {
+        if (activeTimerInterval !== null) {
+            clearInterval(activeTimerInterval);
+            activeTimerInterval = null;
+        }
+    }
+
+    function startElapsedTicker(startIso: string): void {
+        if (typeof window === 'undefined') {
+            activeElapsedSeconds = 0;
+            return;
+        }
+
+        clearActiveTimer();
+        const startTime = new Date(startIso).getTime();
+        const safeStartTime = Number.isNaN(startTime) ? Date.now() : startTime;
+
+        const updateElapsed = () => {
+            activeElapsedSeconds = Math.max(0, Math.floor((Date.now() - safeStartTime) / 1000));
+        };
+
+        updateElapsed();
+        activeTimerInterval = window.setInterval(updateElapsed, 1000);
+    }
+
+    function setActiveOccurrenceState(occurrence: TaskOccurrenceWithStatus | null): void {
+        activeOccurrence = occurrence;
+
+        if (occurrence && occurrence.status !== 'completed') {
+            const startIso = occurrence.scheduled_at ?? occurrence.completed_at ?? new Date().toISOString();
+            activeSessionStartedAt = startIso;
+            startElapsedTicker(startIso);
+        } else {
+            activeSessionStartedAt = null;
+            activeElapsedSeconds = 0;
+            clearActiveTimer();
+        }
+    }
+
+    function applyOccurrences(list: TaskOccurrenceWithStatus[]): {
+        sorted: TaskOccurrenceWithStatus[];
+        active: TaskOccurrenceWithStatus | null;
+    } {
+        const sorted = sortOccurrencesDescending(list);
+        const active = pickActiveOccurrence(sorted);
+        occurrences = sorted;
+        setActiveOccurrenceState(active);
+        return { sorted, active };
+    }
+
+    async function refreshOccurrences(token: string): Promise<{
+        sorted: TaskOccurrenceWithStatus[];
+        active: TaskOccurrenceWithStatus | null;
+    }> {
+        const list = await fetchTaskOccurrencesWithStatus(token, taskId, { include_status: true });
+        return applyOccurrences(list);
+    }
+
+    async function loadRecentLogs(
+        token: string,
+        reference: TaskOccurrenceWithStatus | null
+    ): Promise<void> {
+        if (!reference?.id) {
+            recentLogs = [];
+            if (!hasActiveSession) {
+                lastSessionDuration = null;
+            }
+            return;
+        }
+
+        loadingLogs = true;
+        try {
+            const logs = await fetchOccurrenceLogs(token, reference.id);
+            recentLogs = logs.slice(0, 5);
+            if (!hasActiveSession) {
+                const completedLog = logs.find(
+                    (log) => log.action === 'completed' && typeof log.metadata?.duration_seconds === 'number'
+                );
+                if (completedLog?.metadata?.duration_seconds !== undefined) {
+                    lastSessionDuration = formatSeconds(completedLog.metadata.duration_seconds);
+                }
+            }
+        } catch (err) {
+            console.error('Error loading occurrence logs:', err);
+            recentLogs = [];
+        } finally {
+            loadingLogs = false;
+        }
+    }
+
+    function showFeedback(tone: 'positive' | 'negative', message: string): void {
+        feedback = { tone, message };
+
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        if (feedbackTimeout !== null) {
+            clearTimeout(feedbackTimeout);
+            feedbackTimeout = null;
+        }
+
+        feedbackTimeout = window.setTimeout(() => {
+            feedback = null;
+            feedbackTimeout = null;
+        }, 4000);
+    }
+
+    function requireToken(): string | null {
+        const authStore = getAuthStore();
+        const token = authStore.getToken();
+        if (!token) {
+            showFeedback('negative', 'No hay token de autenticación.');
+            return null;
+        }
+        return token;
+    }
+
+    async function syncOccurrencesAndLogs(token: string): Promise<void> {
+        const { sorted, active } = await refreshOccurrences(token);
+        await loadRecentLogs(token, active ?? sorted[0] ?? null);
+    }
+
+    async function handleStartSession(): Promise<void> {
+        if (isStartingSession || activeOccurrence) {
+            return;
+        }
+
+        const token = requireToken();
+        if (!token) {
+            return;
+        }
+
+        isStartingSession = true;
+        try {
+            await startGoalTask(token, taskId);
+            lastSessionDuration = null;
+            await syncOccurrencesAndLogs(token);
+            showFeedback('positive', 'Sesión iniciada. ¡Buen trabajo!');
+        } catch (err) {
+            console.error('Error starting session:', err);
+            showFeedback('negative', 'No se pudo iniciar la sesión.');
+        } finally {
+            isStartingSession = false;
+        }
+    }
+
+    async function handleCompleteSession(): Promise<void> {
+        if (isCompletingSession) {
+            return;
+        }
+
+        const occurrence = activeOccurrence;
+        if (!occurrence?.id || occurrence.status === 'completed') {
+            showFeedback('negative', 'No hay una sesión activa para completar.');
+            return;
+        }
+
+        const token = requireToken();
+        if (!token) {
+            return;
+        }
+
+        isCompletingSession = true;
+        const durationSeconds = activeElapsedSeconds;
+        const timerStart = activeSessionStartedAt ?? undefined;
+        const timerEnd = new Date().toISOString();
+
+        try {
+            await completeOccurrence(token, occurrence.id);
+
+            try {
+                await createOccurrenceLog(token, occurrence.id, 'completed', {
+                    duration_seconds: durationSeconds,
+                    timer_start: timerStart,
+                    timer_end: timerEnd
+                });
+            } catch (logError) {
+                console.error('Error registrando la duración de la sesión:', logError);
+            }
+
+            await syncOccurrencesAndLogs(token);
+            lastSessionDuration = formatSeconds(durationSeconds);
+            showFeedback('positive', `Sesión completada en ${formatSeconds(durationSeconds)}.`);
+        } catch (err) {
+            console.error('Error completing session:', err);
+            showFeedback('negative', 'No se pudo completar la sesión.');
+        } finally {
+            isCompletingSession = false;
+        }
+    }
+
+    function handlePomodoroSessionComplete(event: CustomEvent<{ mode: PomodoroMode }>): void {
+        const { mode } = event.detail;
+        if (mode === 'focus') {
+            showFeedback('positive', 'Pomodoro de foco completado. Considera registrar tu progreso.');
+        } else {
+            showFeedback('positive', `${pomodoroModeLabels[mode]} completado.`);
+        }
+    }
+
+    function handlePomodoroModeChange(event: CustomEvent<{ mode: PomodoroMode }>): void {
+        pomodoroMode = event.detail.mode;
+    }
+
+    onDestroy(() => {
+        clearActiveTimer();
+        if (feedbackTimeout !== null) {
+            clearTimeout(feedbackTimeout);
+            feedbackTimeout = null;
+        }
+    });
 
     function formatDateTime(date?: string | null): string {
         if (!date) return '—';
@@ -191,6 +447,72 @@
                     {/if}
                 </div>
             </header>
+
+            <section class="card session-card">
+                <div class="session-card__header">
+                    <h3>Sesión de trabajo</h3>
+                    <span class="session-status {hasActiveSession ? 'active' : 'idle'}">{activeSessionStatusLabel}</span>
+                </div>
+
+                {#if feedback}
+                    <div class="session-feedback {feedback.tone}">
+                        {feedback.message}
+                    </div>
+                {/if}
+
+                <div class="session-card__stats">
+                    <div>
+                        <span class="label">Inicio</span>
+                        <span class="value">{formatDateTime(activeSessionStartedAt)}</span>
+                    </div>
+                    <div>
+                        <span class="label">Tiempo transcurrido</span>
+                        <span class="value">{activeElapsedReadable}</span>
+                    </div>
+                    <div>
+                        <span class="label">Última sesión</span>
+                        <span class="value">{lastSessionDuration ?? '—'}</span>
+                    </div>
+                </div>
+
+                <div class="session-card__actions">
+                    {#if hasActiveSession}
+                        <button
+                            type="button"
+                            class="primary"
+                            onclick={handleCompleteSession}
+                            disabled={isCompletingSession}
+                        >
+                            {isCompletingSession ? 'Guardando…' : 'Completar sesión'}
+                        </button>
+                    {:else}
+                        <button
+                            type="button"
+                            class="primary"
+                            onclick={handleStartSession}
+                            disabled={isStartingSession}
+                        >
+                            {isStartingSession ? 'Iniciando…' : 'Iniciar sesión'}
+                        </button>
+                    {/if}
+                    <button type="button" class="ghost" onclick={loadData} disabled={loading}>
+                        Actualizar datos
+                    </button>
+                </div>
+            </section>
+
+            <section class="card pomodoro-card">
+                <div class="pomodoro-card__header">
+                    <h3>Cronómetro Pomodoro</h3>
+                    <span class="pomodoro-mode">{pomodoroModeLabels[pomodoroMode]}</span>
+                </div>
+                <PomodoroTimer
+                    autoContinue={false}
+                    on:sessionComplete={handlePomodoroSessionComplete}
+                    on:modeChange={handlePomodoroModeChange}
+                />
+                <p class="pomodoro-card__hint">Usa el Pomodoro para dividir tu sesión en bloques de foco y descansos controlados.</p>
+            </section>
 
             <section class="grid">
                 <article class="card">
@@ -403,6 +725,118 @@
     .progress {
         color: rgba(16, 185, 129, 0.82);
         font-size: 0.9rem;
+    }
+
+    .session-card {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .session-card__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .session-status {
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .session-status.active {
+        color: #34d399;
+        background: rgba(52, 211, 153, 0.12);
+        border: 1px solid rgba(52, 211, 153, 0.35);
+    }
+
+    .session-status.idle {
+        color: rgba(245, 245, 245, 0.6);
+        border: 1px solid rgba(245, 245, 245, 0.08);
+    }
+
+    .session-feedback {
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .session-feedback.positive {
+        color: #34d399;
+        border-color: rgba(52, 211, 153, 0.35);
+        background: rgba(52, 211, 153, 0.12);
+    }
+
+    .session-feedback.negative {
+        color: #f87171;
+        border-color: rgba(248, 113, 113, 0.35);
+        background: rgba(248, 113, 113, 0.12);
+    }
+
+    .session-card__stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+    }
+
+    .session-card__stats .value {
+        font-size: 1rem;
+    }
+
+    .session-card__actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .session-card__actions button.primary {
+        background: linear-gradient(135deg, #22d3ee, #6366f1);
+        color: #0f1012;
+        box-shadow: 0 10px 25px -15px rgba(96, 102, 241, 0.7);
+    }
+
+    .session-card__actions button.primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .session-card__actions button.ghost {
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(245, 245, 245, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .pomodoro-card {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .pomodoro-card__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .pomodoro-mode {
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: rgba(79, 70, 229, 0.18);
+        color: #c7d2fe;
+        border: 1px solid rgba(129, 140, 248, 0.35);
+    }
+
+    .pomodoro-card__hint {
+        margin: 0;
+        color: rgba(245, 245, 245, 0.65);
+        font-size: 0.85rem;
     }
 
     .grid {

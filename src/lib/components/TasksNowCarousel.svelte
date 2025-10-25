@@ -12,7 +12,13 @@
 	} from '$lib/services/time-optimizer';
 	import { completeMindTask, uncomplateMindTask } from '$lib/services/tasks_mind';
 	import { completeBodyTask, uncomplateBodyTask } from '$lib/services/tasks_body';
-	import { completeOccurrence, uncompleteOccurrence } from '$lib/services/goalTasks';
+	import {
+	completeOccurrence,
+	uncompleteOccurrence,
+	startGoalTask,
+	fetchTaskOccurrencesWithStatus,
+	createOccurrenceLog
+} from '$lib/services/goalTasks';
 	import type { AuthStore, TasksNowResponse, TaskNow } from '$lib/types';
 	
 	interface CompletedTask {
@@ -42,6 +48,8 @@
 	let completedTasks = $state<Map<string, CompletedTask>>(new Map());
 	let processing = $state<Set<string>>(new Set());
 	let authStore: AuthStore | null = null;
+	let activeGoalSessions = $state<Record<string, { occurrenceId: string; startedAt: string }>>({});
+	let goalSessionTimers = $state<Record<string, { intervalId: ReturnType<typeof setInterval>; elapsedSeconds: number }>>({});
 
 	async function ensureAuthStore(): Promise<AuthStore> {
 		if (authStore) return authStore;
@@ -70,13 +78,151 @@
 		completedTasks.forEach((completed) => {
 			clearTimeout(completed.timeoutId);
 		});
+
+		Object.values(goalSessionTimers).forEach(({ intervalId }) => {
+			clearInterval(intervalId);
+		});
 	});
+
+	function stopGoalSessionTimer(taskId: string) {
+		const timer = goalSessionTimers[taskId];
+		if (timer) {
+			clearInterval(timer.intervalId);
+			const { [taskId]: _, ...rest } = goalSessionTimers;
+			goalSessionTimers = rest;
+		}
+	}
+
+	async function handleGoalTaskStart(task: TaskNow, event: Event) {
+		event.stopPropagation();
+		if (processing.has(task.id) || task.type !== 'goal') return;
+
+		if (activeGoalSessions[task.id]) {
+			// Already active, do nothing.
+			return;
+		}
+
+		processing.add(task.id);
+		processing = new Set(processing);
+
+		try {
+			const occurrence = await startGoalTask(token, task.task_id);
+			if (!occurrence?.id || !occurrence.scheduled_at) {
+				throw new Error('No se pudo iniciar la sesión de tarea.');
+			}
+
+			activeGoalSessions = {
+				...activeGoalSessions,
+				[task.id]: {
+					occurrenceId: occurrence.id,
+					startedAt: occurrence.scheduled_at
+				}
+			};
+			startGoalSessionTimer(task.id, occurrence.scheduled_at);
+		} catch (err) {
+			console.error('Error starting goal task session:', err);
+			error = err instanceof Error ? err.message : 'No se pudo iniciar la tarea.';
+		} finally {
+			processing.delete(task.id);
+			processing = new Set(processing);
+		}
+	}
+
+	function startGoalSessionTimer(taskId: string, startedAt: string) {
+		stopGoalSessionTimer(taskId);
+
+		const startTime = new Date(startedAt).getTime();
+		const safeStart = Number.isNaN(startTime) ? Date.now() : startTime;
+
+		let intervalId: ReturnType<typeof setInterval>;
+		const updateElapsed = () => {
+			const elapsedSeconds = Math.max(0, Math.floor((Date.now() - safeStart) / 1000));
+			goalSessionTimers = {
+				...goalSessionTimers,
+				[taskId]: {
+					intervalId,
+					elapsedSeconds
+				}
+			};
+		};
+
+		intervalId = setInterval(updateElapsed, 1000);
+		updateElapsed();
+	}
+
+	function formatElapsed(seconds: number): string {
+		const hours = Math.floor(seconds / 3600);
+		const minutes = Math.floor((seconds % 3600) / 60);
+		const secs = seconds % 60;
+		if (hours > 0) {
+			return `${hours}h ${minutes}m`;
+		}
+		if (minutes > 0) {
+			return `${minutes}m ${secs}s`;
+		}
+		return `${secs}s`;
+	}
 
 	async function loadTasks() {
 		try {
 			loading = true;
 			error = null;
-			data = await getTasksForNow(token);
+			const response = await getTasksForNow(token);
+
+			const goalTasks = response.goal_tasks ?? [];
+			const filteredGoalTasks: TaskNow[] = [];
+			const newActiveSessions: Record<string, { occurrenceId: string; startedAt: string }> = {};
+			const newActiveSessionIds = new Set<string>();
+
+			for (const task of goalTasks) {
+				if (!task.task_id) {
+					filteredGoalTasks.push(task);
+					continue;
+				}
+
+				try {
+					const occurrences = await fetchTaskOccurrencesWithStatus(token, task.task_id, {
+						include_status: true
+					});
+					const active = occurrences.find(
+						(occ) => occ.status === 'in_progress' || occ.last_action === 'started'
+					);
+					if (active?.id && active.scheduled_at) {
+						newActiveSessions[task.id] = {
+							occurrenceId: active.id,
+							startedAt: active.scheduled_at
+						};
+						newActiveSessionIds.add(task.id);
+						startGoalSessionTimer(task.id, active.scheduled_at);
+						filteredGoalTasks.push(task);
+						continue;
+					}
+
+					stopGoalSessionTimer(task.id);
+					const hasCompletedOccurrence = occurrences.some((occ) => occ.status === 'completed');
+					if (!hasCompletedOccurrence) {
+						filteredGoalTasks.push(task);
+					}
+				} catch (err) {
+					console.error('Error fetching goal task occurrences for carousel:', err);
+					filteredGoalTasks.push(task);
+				}
+			}
+
+			for (const taskId of Object.keys(activeGoalSessions)) {
+				if (!newActiveSessionIds.has(taskId)) {
+					stopGoalSessionTimer(taskId);
+				}
+			}
+
+			activeGoalSessions = newActiveSessions;
+
+			data = {
+				...response,
+				goal_tasks: filteredGoalTasks,
+				mind_tasks: response.mind_tasks ?? [],
+				body_tasks: response.body_tasks ?? []
+			};
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load tasks';
 			console.error('Error loading tasks:', e);
@@ -100,6 +246,14 @@
 		event.stopPropagation();
 		
 		if (processing.has(task.id)) return;
+
+		if (task.type === 'goal') {
+			const activeSession = activeGoalSessions[task.id];
+			if (!activeSession) {
+				error = 'Debes iniciar la sesión antes de completarla.';
+				return;
+			}
+		}
 		
 		processing.add(task.id);
 		processing = new Set(processing);
@@ -115,8 +269,29 @@
 				const store = await ensureAuthStore();
 				await completeBodyTask(store, task.task_id);
 			} else if (task.type === 'goal') {
-				const result = await completeOccurrence(token, task.id);
-				occurrenceId = result.occurrence?.id;
+				const activeSession = activeGoalSessions[task.id];
+				if (!activeSession) {
+					throw new Error('La tarea no tiene una sesión activa.');
+				}
+
+				await completeOccurrence(token, activeSession.occurrenceId);
+
+				const timerInfo = goalSessionTimers[task.id];
+				const durationSeconds = timerInfo?.elapsedSeconds ?? 0;
+				try {
+					await createOccurrenceLog(token, activeSession.occurrenceId, 'completed', {
+						duration_seconds: durationSeconds,
+						timer_start: activeSession.startedAt,
+						timer_end: new Date().toISOString()
+					});
+				} catch (logErr) {
+					console.error('Error registrando duración de tarea goal:', logErr);
+				}
+
+				occurrenceId = activeSession.occurrenceId;
+				stopGoalSessionTimer(task.id);
+				const { [task.id]: _, ...restSessions } = activeGoalSessions;
+				activeGoalSessions = restSessions;
 			}
 			
 			// Marcar como completada con timer de 5 segundos
@@ -218,11 +393,29 @@
 		return null;
 	}
 
+	function hasActiveSession(task: TaskNow): boolean {
+		if (task.type !== 'goal') return false;
+		return Boolean(activeGoalSessions[task.id]);
+	}
+
 	function getUtilizationColor(percentage: number): string {
 		if (percentage >= 85) return 'text-emerald-400';
 		if (percentage >= 70) return 'text-blue-400';
 		if (percentage >= 50) return 'text-amber-400';
 		return 'text-red-400';
+	}
+
+	function goalButtonLabel(task: TaskNow): string {
+		const session = activeGoalSessions[task.id];
+		if (session) {
+			const seconds = goalSessionTimers[task.id]?.elapsedSeconds ?? 0;
+			return `En progreso · ${formatElapsed(seconds)}`;
+		}
+		return 'Iniciar sesión';
+	}
+
+	function filterActiveTasks(tasks: TaskNow[]): TaskNow[] {
+		return tasks.filter((task) => task.status !== 'completed');
 	}
 </script>
 
@@ -414,6 +607,7 @@
 								: selectedTaskId === task.id 
 									? `border-${getTaskTypeColor(task.type)}-500 bg-${getTaskTypeColor(task.type)}-500/10 scale-105 shadow-2xl shadow-${getTaskTypeColor(task.type)}-500/20` 
 									: 'border-neutral-700 bg-gradient-to-br from-neutral-800 to-neutral-900 hover:border-neutral-600 hover:scale-[1.02] hover:shadow-xl'}"
+							class:goal-active={hasActiveSession(task)}
 						>
 							<!-- Background pattern -->
 							<div class="absolute inset-0 opacity-5">
@@ -462,17 +656,41 @@
 											</svg>
 										</button>
 									{:else}
-										<button
-											onclick={(e) => handleTaskComplete(task, e)}
-											disabled={processing.has(task.id)}
-											class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 flex items-center justify-center text-emerald-400 hover:text-white transition-all group/complete hover:scale-110 shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-											aria-label="Mark task as complete"
-											title="Marcar como completada"
-										>
-											<svg class="w-4 h-4 sm:w-5 sm:h-5 group-hover/complete:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-											</svg>
-										</button>
+										{#if task.type === 'goal'}
+											{#if activeGoalSessions[task.id]}
+												<button
+													onclick={(e) => handleTaskComplete(task, e)}
+													disabled={processing.has(task.id)}
+													class="px-2 sm:px-3 py-1 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 text-emerald-200 hover:text-white text-[10px] sm:text-xs font-semibold transition-all shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+													aria-label="Completar sesión"
+													title="Completar sesión"
+												>
+													{processing.has(task.id) ? 'Guardando…' : 'Completar'}
+												</button>
+											{:else}
+												<button
+													onclick={(e) => handleGoalTaskStart(task, e)}
+													disabled={processing.has(task.id)}
+													class="px-2 sm:px-3 py-1 rounded-full bg-sky-500/20 hover:bg-sky-500/35 border-2 border-sky-500/40 hover:border-sky-500/60 text-sky-200 hover:text-white text-[10px] sm:text-xs font-semibold transition-all shadow-lg hover:shadow-sky-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+													aria-label="Iniciar sesión"
+													title="Iniciar sesión"
+												>
+													{processing.has(task.id) ? 'Iniciando…' : goalButtonLabel(task)}
+												</button>
+											{/if}
+										{:else}
+											<button
+												onclick={(e) => handleTaskComplete(task, e)}
+												disabled={processing.has(task.id)}
+												class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 border-2 border-emerald-500/50 hover:border-emerald-500/70 flex items-center justify-center text-emerald-400 hover:text-white transition-all group/complete hover:scale-110 shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+												aria-label="Mark task as complete"
+												title="Marcar como completada"
+											>
+												<svg class="w-4 h-4 sm:w-5 sm:h-5 group-hover/complete:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+												</svg>
+											</button>
+										{/if}
 									{/if}
 								</div>
 								
@@ -483,6 +701,13 @@
 											{badge.text}
 										</span>
 									{/if}
+								{/if}
+
+								{#if task.type === 'goal' && activeGoalSessions[task.id]}
+									<span class="px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold border border-sky-400/40 text-sky-200 bg-sky-500/20 mb-1 inline-flex items-center gap-1">
+										<span class="inline-block w-1.5 h-1.5 rounded-full bg-sky-300 animate-pulse"></span>
+										En ejecución
+									</span>
 								{/if}
 								
 								<!-- Título -->
@@ -503,6 +728,12 @@
 										<span class="text-neutral-500">⏱️</span>
 										<span class="text-neutral-300">{formatDuration(task.estimated_duration_minutes)}m</span>
 									</div>
+									{#if task.type === 'goal' && activeGoalSessions[task.id]}
+										<div class="flex items-center gap-1.5 text-[10px] sm:text-xs">
+											<span class="text-neutral-500">🟢</span>
+											<span class="text-sky-200">{goalButtonLabel(task)}</span>
+										</div>
+									{/if}
 									{#if task.type === 'goal' && task.goal_title}
 										<div class="flex items-center gap-1.5 text-[10px] sm:text-xs">
 											<span class="text-neutral-500">🎯</span>
@@ -573,6 +804,12 @@
 		line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+	}
+
+	.goal-active {
+		border-color: rgba(56, 189, 248, 0.6) !important;
+		box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15), 0 12px 30px -18px rgba(56, 189, 248, 0.6);
+		background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(37, 99, 235, 0.12)) !important;
 	}
 	
 	@keyframes gradient {

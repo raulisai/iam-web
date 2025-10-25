@@ -187,9 +187,13 @@
         }
     }
 
-    function handleTimerStart(taskId: string) {
-        tasksStore.startTimer(taskId);
-        showMessage('⏱️ Cronómetro iniciado', 'success');
+    async function handleTimerStart(taskId: string) {
+        const started = await tasksStore.startTimer(taskId);
+        if (started) {
+            showMessage('⏱️ Cronómetro iniciado', 'success');
+        } else {
+            showMessage('No se pudo iniciar el cronómetro', 'error');
+        }
     }
 
     function handleTimerPause(taskId: string) {

@@ -5,6 +5,7 @@ import {
 	updateGoalTask,
 	deleteGoalTask,
 	createTaskOccurrence,
+	startGoalTask,
 	fetchTaskOccurrences,
 	fetchCompletedTaskIds,
 	deleteOccurrence,
@@ -484,16 +485,49 @@ class TasksStore {
 	/**
 	 * Iniciar timer para una tarea
 	 */
-	startTimer(taskId: string): void {
-		const now = Date.now();
-		this.activeTimers[taskId] = {
-			taskId,
-			startTime: now,
-			elapsedSeconds: 0,
-			isRunning: true,
-			isPaused: false
-		};
-		this.saveTimersToStorage();
+	async startTimer(taskId: string): Promise<boolean> {
+		const authStore = getAuthStore();
+		const token = authStore.getToken();
+		if (!token) {
+			console.error('No authentication token');
+			return false;
+		}
+
+		// Evitar duplicar timers
+		if (this.activeTimers[taskId]?.isRunning) {
+			return true;
+		}
+
+		try {
+			const occurrence = await startGoalTask(token, taskId);
+			if (!occurrence?.id) {
+				console.warn('No occurrence returned when starting task');
+				return false;
+			}
+
+			// Registrar occurrence en caché
+			this.occurrenceIdByTask[taskId] = occurrence.id;
+			if (!this.occurrencesByTask[taskId]) {
+				this.occurrencesByTask[taskId] = [];
+			}
+			if (!this.occurrencesByTask[taskId].some(occ => occ.id === occurrence.id)) {
+				this.occurrencesByTask[taskId] = [...this.occurrencesByTask[taskId], occurrence];
+			}
+
+			const now = Date.now();
+			this.activeTimers[taskId] = {
+				taskId,
+				startTime: now,
+				elapsedSeconds: 0,
+				isRunning: true,
+				isPaused: false
+			};
+			this.saveTimersToStorage();
+			return true;
+		} catch (err) {
+			console.error('Error starting timer for task:', err);
+			return false;
+		}
 	}
 
 	/**

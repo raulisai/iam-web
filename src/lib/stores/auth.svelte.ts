@@ -119,10 +119,14 @@ class AuthStore {
 	}
 
 	// Función helper para hacer peticiones autenticadas con el token JWT
-	async authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
-		const token = this.getToken();
+	async authenticatedFetch(
+		url: string,
+		options: RequestInit = {},
+		tokenOverride?: string
+	): Promise<Response> {
+		const resolvedToken = tokenOverride ?? this.getToken();
 		
-		if (!token) {
+		if (!resolvedToken) {
 			throw new Error('No hay token de autenticación');
 		}
 
@@ -133,7 +137,7 @@ class AuthStore {
 
 		// Combinar headers existentes con el Authorization header
 		const headers = new Headers(options.headers);
-		headers.set('Authorization', `Bearer ${token}`);
+		headers.set('Authorization', `Bearer ${resolvedToken}`);
 		
 		// Agregar headers estándar requeridos por el backend
 		if (!headers.has('accept')) {

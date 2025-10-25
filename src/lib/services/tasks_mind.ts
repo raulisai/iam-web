@@ -118,3 +118,59 @@ export async function uncomplateMindTask(authStore: AuthStore, taskId: string): 
         return false;
     }
 }
+
+/**
+ * Complete a mind task (token-based version)
+ */
+export async function completeMindTaskWithToken(token: string, taskId: string): Promise<any> {
+    try {
+        // Obtener authStore para usar authenticatedFetch que maneja CORS correctamente
+        const { getAuthStore } = await import('../stores/auth.svelte');
+        const authStore = getAuthStore();
+        
+        const response = await authStore.authenticatedFetch(
+            `${BACKEND_URL}/api/tasks/mind/${taskId}/complete`,
+            {
+                method: 'POST'
+            },
+            token
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to complete mind task: ${response.status}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error completing mind task:', error);
+        return false;
+    }
+}
+
+/**
+ * Uncomplete (revert) a mind task
+ */
+export async function uncomplateMindTaskWithToken(token: string, taskId: string): Promise<any> {
+    try {
+        // Obtener authStore para usar authenticatedFetch que maneja CORS correctamente
+        const { getAuthStore } = await import('../stores/auth.svelte');
+        const authStore = getAuthStore();
+        
+        const response = await authStore.authenticatedFetch(
+            `${BACKEND_URL}/api/tasks/mind/${taskId}/uncomplete`,
+            {
+                method: 'POST'
+            },
+            token
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to uncomplete mind task: ${response.status}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error uncompleting mind task:', error);
+        return false;
+    }
+}

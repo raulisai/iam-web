@@ -8,16 +8,8 @@ async function authFetch(
 ): Promise<Response> {
 	const { getAuthStore } = await import('../stores/auth.svelte');
 	const authStore = getAuthStore();
-	const headers = new Headers(options.headers);
 
-	if (token && !headers.has('Authorization')) {
-		headers.set('Authorization', `Bearer ${token}`);
-	}
-
-	return authStore.authenticatedFetch(url, {
-		...options,
-		headers
-	});
+	return authStore.authenticatedFetch(url, options, token);
 }
 
 

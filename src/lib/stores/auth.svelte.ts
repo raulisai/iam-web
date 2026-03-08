@@ -64,7 +64,7 @@ class AuthStore {
 		try {
 			const storedUser = localStorage.getItem('user');
 			const token = localStorage.getItem('token');
-			
+
 			if (storedUser && token) {
 				// Restaurar sesión desde localStorage
 				this.user = JSON.parse(storedUser);
@@ -94,26 +94,62 @@ class AuthStore {
 			if (response.ok && data.user && data.token) {
 				this.user = data.user;
 				this.isAuthenticated = true;
-				
+
 				// Guardar en localStorage (el token ya está en la cookie httpOnly)
 				localStorage.setItem('user', JSON.stringify(data.user));
 				localStorage.setItem('token', data.token);
-				
+
 				// Enviar token a Android si está disponible
 				sendTokenToAndroid(data.token, data.user.id);
-				
+
 				return { success: true };
 			} else {
-				return { 
-					success: false, 
-					message: data.message || 'Credenciales inválidas' 
+				return {
+					success: false,
+					message: data.message || 'Credenciales inválidas'
 				};
 			}
 		} catch (error) {
 			console.error('Error durante el login:', error);
-			return { 
-				success: false, 
-				message: 'Error de conexión. Por favor, intenta de nuevo.' 
+			return {
+				success: false,
+				message: 'Error de conexión. Por favor, intenta de nuevo.'
+			};
+		}
+	}
+
+	async register(name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> {
+		try {
+			const response = await fetch('/api/auth/register', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ name, email, password }),
+			});
+
+			const data = await response.json();
+
+			if (response.ok) {
+				if (data.user && data.token) {
+					this.user = data.user;
+					this.isAuthenticated = true;
+					localStorage.setItem('user', JSON.stringify(data.user));
+					localStorage.setItem('token', data.token);
+					sendTokenToAndroid(data.token, data.user.id);
+				}
+				return { success: true };
+			} else {
+				return {
+					success: false,
+					message: data.message || 'Error al completar el registro'
+				};
+			}
+		} catch (error) {
+			console.error('Error durante el registro:', error);
+			return {
+				success: false,
+				message: 'Error de conexión. Por favor, intenta de nuevo.'
 			};
 		}
 	}
@@ -125,7 +161,7 @@ class AuthStore {
 		tokenOverride?: string
 	): Promise<Response> {
 		const resolvedToken = tokenOverride ?? this.getToken();
-		
+
 		if (!resolvedToken) {
 			throw new Error('No hay token de autenticación');
 		}
@@ -138,7 +174,7 @@ class AuthStore {
 		// Combinar headers existentes con el Authorization header
 		const headers = new Headers(options.headers);
 		headers.set('Authorization', `Bearer ${resolvedToken}`);
-		
+
 		// Agregar headers estándar requeridos por el backend
 		if (!headers.has('accept')) {
 			headers.set('accept', '*/*');
@@ -146,12 +182,12 @@ class AuthStore {
 		if (!headers.has('accept-language')) {
 			headers.set('accept-language', 'es-419,es;q=0.5');
 		}
-		
+
 		// Agregar origin si estamos en el navegador
 		if (typeof window !== 'undefined' && !headers.has('origin')) {
 			headers.set('origin', window.location.origin);
 		}
-		
+
 		// Solo agregar Content-Type si no está ya definido y hay body
 		if (!headers.has('Content-Type') && options.body) {
 			headers.set('Content-Type', 'application/json');
@@ -174,17 +210,17 @@ class AuthStore {
 		} catch (error) {
 			console.error('Error al cerrar sesión en el servidor:', error);
 		}
-		
+
 		// Limpiar estado local
 		this.user = null;
 		this.isAuthenticated = false;
-		
+
 		// Limpiar localStorage
 		if (typeof window !== 'undefined') {
 			localStorage.removeItem('user');
 			localStorage.removeItem('token');
 		}
-		
+
 		// Redirigir al login
 		if (typeof window !== 'undefined') {
 			window.location.href = '/login';
@@ -194,17 +230,17 @@ class AuthStore {
 	// Manejar errores de autenticación (token expirado o inválido)
 	handleUnauthorized() {
 		console.warn('Sesión expirada o inválida. Redirigiendo al login...');
-		
+
 		// Limpiar estado local
 		this.user = null;
 		this.isAuthenticated = false;
-		
+
 		// Limpiar localStorage
 		if (typeof window !== 'undefined') {
 			localStorage.removeItem('user');
 			localStorage.removeItem('token');
 			localStorage.setItem('sessionExpired', 'true'); // Flag para mostrar mensaje
-			
+
 			// Redirigir al login
 			window.location.href = '/login';
 		}

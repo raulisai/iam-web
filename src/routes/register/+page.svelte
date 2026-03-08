@@ -5,24 +5,17 @@
 
 	const authStore = getAuthStore();
 	
+	let name = $state('');
 	let email = $state('');
 	let password = $state('');
 	let isLoading = $state(false);
 	let error = $state('');
 	let showPassword = $state(false);
-	let sessionExpiredMessage = $state('');
 
 	// Si ya está autenticado, redirigir
 	onMount(() => {
 		if (authStore.isAuthenticated) {
 			goto('/');
-		}
-		
-		// Check if session expired
-		const sessionExpired = localStorage.getItem('sessionExpired');
-		if (sessionExpired === 'true') {
-			sessionExpiredMessage = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
-			localStorage.removeItem('sessionExpired');
 		}
 	});
 
@@ -31,12 +24,14 @@
 		error = '';
 		isLoading = true;
 
-		const result = await authStore.login(email, password);
+		const result = await authStore.register(name, email, password);
 		
 		if (result.success) {
+			// El registro fue exitoso. Si el backend además inició sesión, vamos al home.
+			// Si no, podríamos redirigir al login con un mensaje de éxito.
 			goto('/');
 		} else {
-			error = result.message || 'Error al iniciar sesión';
+			error = result.message || 'Error al crear la cuenta';
 			isLoading = false;
 		}
 	}
@@ -47,37 +42,45 @@
 		<!-- Logo y título -->
 		<div class="text-center">
 			<div class="flex justify-center mb-4">
-				<div class="w-20 h-20 bg-gradient-to-tr from-violet-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-2xl">
+				<div class="w-20 h-20 bg-gradient-to-tr from-pink-600 to-violet-600 rounded-2xl flex items-center justify-center shadow-2xl">
 					<svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
 					</svg>
 				</div>
 			</div>
 			<h2 class="text-3xl font-bold text-white">
-				IAM Dashboard
+				Crear cuenta
 			</h2>
 			<p class="mt-2 text-neutral-400">
-				Ingresa tus credenciales para acceder
+				Únete a IAM Dashboard hoy mismo
 			</p>
 		</div>
 
 		<!-- Formulario -->
 		<div class="bg-neutral-900/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-neutral-800">
 			<form class="space-y-6" onsubmit={handleSubmit}>
-				{#if sessionExpiredMessage}
-					<div class="bg-amber-900/20 border border-amber-800 text-amber-400 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
-						<svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-						</svg>
-						<span>{sessionExpiredMessage}</span>
-					</div>
-				{/if}
-				
 				{#if error}
 					<div class="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded-lg text-sm">
 						{error}
 					</div>
 				{/if}
+
+				<!-- Nombre -->
+				<div>
+					<label for="name" class="block text-sm font-medium text-neutral-300 mb-2">
+						Nombre completo
+					</label>
+					<input
+						id="name"
+						name="name"
+						type="text"
+						required
+						bind:value={name}
+						disabled={isLoading}
+						class="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+						placeholder="Tu nombre"
+					/>
+				</div>
 
 				<!-- Email -->
 				<div>
@@ -92,7 +95,7 @@
 						required
 						bind:value={email}
 						disabled={isLoading}
-						class="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+						class="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
 						placeholder="tu@email.com"
 					/>
 				</div>
@@ -107,11 +110,11 @@
 							id="password"
 							name="password"
 							type={showPassword ? 'text' : 'password'}
-							autocomplete="current-password"
+							autocomplete="new-password"
 							required
 							bind:value={password}
 							disabled={isLoading}
-							class="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed pr-12"
+							class="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed pr-12"
 							placeholder="••••••••"
 						/>
 						<button
@@ -133,41 +136,28 @@
 					</div>
 				</div>
 
-				<!-- Remember me -->
-				<div class="flex items-center">
-					<input
-						id="remember-me"
-						name="remember-me"
-						type="checkbox"
-						class="h-4 w-4 bg-neutral-800 border-neutral-700 rounded text-violet-600 focus:ring-violet-500"
-					/>
-					<label for="remember-me" class="ml-2 block text-sm text-neutral-300">
-						Mantener sesión iniciada
-					</label>
-				</div>
-
 				<!-- Submit button -->
 				<button
 					type="submit"
 					disabled={isLoading}
-					class="w-full flex justify-center items-center px-4 py-3 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-medium rounded-lg hover:from-violet-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+					class="w-full flex justify-center items-center px-4 py-3 bg-gradient-to-r from-pink-600 to-violet-600 text-white font-medium rounded-lg hover:from-pink-700 hover:to-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
 				>
 					{#if isLoading}
 						<svg class="animate-spin h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24">
 							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 						</svg>
-						Iniciando sesión...
+						Creando cuenta...
 					{:else}
-						Iniciar sesión
+						Registrarse
 					{/if}
 				</button>
 
 				<div class="text-center">
 					<p class="text-sm text-neutral-400">
-						¿No tienes una cuenta? 
-						<a href="/register" class="font-medium text-violet-500 hover:text-violet-400 transition-colors ml-1">
-							Regístrate
+						¿Ya tienes una cuenta? 
+						<a href="/login" class="font-medium text-pink-500 hover:text-pink-400 transition-colors ml-1">
+							Inicia sesión
 						</a>
 					</p>
 				</div>

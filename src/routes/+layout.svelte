@@ -26,7 +26,7 @@
 	
 	// Verificar si estamos en una página pública y redirigir si no hay sesión
 	$effect(() => {
-		const publicPages = ['/login', '/auth-required'];
+		const publicPages = ['/login', '/auth-required', '/register'];
 		const isPublicPage = publicPages.includes($page.url.pathname);
 		
 		// Si no está autenticado y no está en una página pública, redirigir
